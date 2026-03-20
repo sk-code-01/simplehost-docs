@@ -1,0 +1,1890 @@
+# Supalink
+
+> Instant static web hosting for developers and AI agents. Publish any file or folder and get a live URL in seconds.
+
+---
+
+# Introduction
+
+## What is Supalink?
+
+Supalink is instant static web hosting. Publish any file or folder and get a live URL in seconds.
+
+```bash
+./publish.sh ./dist
+# => https://bright-canvas-a7k2.supalink.dev/
+```
+
+Every site gets a unique slug and is served from a global CDN via Cloudflare.
+
+## Key Features
+
+- **Instant Publishing**: Publish any directory to a live URL. HTML, CSS, JS, images, PDFs, videos — any static file.
+- **Zero Config**: No build pipeline, no CI/CD setup, no server config. Just publish and go.
+- **Agent-Native**: Built for AI agents. Install the Claude Code skill and publish from any conversation.
+- **Hash Deduplication**: On updates, only changed files are uploaded. Unchanged files are copied server-side.
+- **Custom Domains**: Point your own domain to any Supalink site with automatic SSL.
+- **Anonymous Publishing**: No account needed. Publish anonymously with a 24-hour expiry. Claim later to keep it.
+
+## How It Works
+
+Publishing is a 3-step process:
+
+1. **Create** — Send your file manifest to the API. You get back upload URLs for each file.
+2. **Upload** — Upload each file to its presigned URL. Files go directly to Cloudflare R2 storage.
+3. **Finalize** — Tell the API you're done. Your site goes live instantly at `slug.supalink.dev`.
+
+The `publish.sh` script handles all three steps automatically.
+
+## Quick Links
+
+- [Quickstart](/quickstart): Publish your first site in under a minute.
+- [API Reference](/api-reference/overview): Full REST API documentation.
+- [Agent Skill](/skill/overview): Install the Claude Code skill.
+
+---
+
+# Quickstart
+
+## Prerequisites
+
+You need `curl` and `jq` installed. Both come pre-installed on macOS and most Linux distributions.
+
+## Step 1: Get the publish script
+
+```bash
+curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+```
+
+## Step 2: Publish a directory
+
+```bash
+./publish.sh ./my-site
+```
+
+That's it. You'll get a live URL like `https://bright-canvas-a7k2.supalink.dev/`.
+
+Without an API key, your site is published anonymously and expires in **24 hours**. See below to make it permanent.
+
+## Make it permanent
+
+### Get an API key
+
+1. **Request a verification code**
+
+```bash
+curl -s -X POST https://supalink.dev/api/auth/agent/request-code \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com"}'
+```
+
+2. **Check your email** — You'll receive a code in the format `XXXX-XXXX`.
+
+3. **Verify and get your API key**
+
+```bash
+curl -s -X POST https://supalink.dev/api/auth/agent/verify-code \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "code": "ABCD-1234"}'
+```
+
+The response includes your API key. **Save it immediately** — it is shown only once.
+
+### Publish with your API key
+
+```bash
+export SUPALINK_API_KEY="sl_live_your_key_here"
+./publish.sh ./my-site
+```
+
+Authenticated publishes are **permanent** — they don't expire.
+
+## Update an existing site
+
+Pass the slug as a second argument:
+
+```bash
+./publish.sh ./my-site bright-canvas-a7k2
+```
+
+Only changed files are uploaded (hash deduplication). Unchanged files are copied server-side.
+
+## Next steps
+
+- [Custom Domains](/guides/custom-domains): Point your own domain to your site.
+- [API Reference](/api-reference/overview): Build your own integration with the REST API.
+- [Agent Skill](/skill/overview): Let AI agents publish for you.
+- [Plans & Limits](/guides/plans-and-limits): Compare Free and Hobby plans.
+
+---
+
+# How It Works
+
+## Architecture
+
+Supalink runs entirely on Cloudflare's edge infrastructure:
+
+- **Cloudflare Workers** — Handles all API requests and site serving
+- **Cloudflare R2** — Object storage for published files (S3-compatible, zero egress fees)
+- **Cloudflare D1** — SQLite database for site metadata, users, and versions
+- **Cloudflare KV** — Session storage and rate limiting
+
+Every request is handled at the edge, close to the user. There are no origin servers.
+
+## The Publish Flow
+
+When you publish a directory, three things happen:
+
+### 1. Create (file manifest)
+
+Your client sends a JSON manifest listing every file: path, size, content type, and SHA-256 hash.
+
+```json
+{
+  "files": [
+    { "path": "index.html", "size": 1024, "contentType": "text/html", "hash": "a1b2c3..." },
+    { "path": "style.css", "size": 512, "contentType": "text/css", "hash": "d4e5f6..." }
+  ]
+}
+```
+
+The API creates a new **version** for the site and returns presigned upload URLs for each file.
+
+### 2. Upload (direct to R2)
+
+Each file is uploaded directly to R2 using the presigned URL. The upload goes straight to storage — no proxying through the Worker for large files.
+
+Upload URLs expire after **1 hour**.
+
+### 3. Finalize
+
+After all files are uploaded, a finalize call tells the API to make the new version live. The API verifies every file exists in R2 before activating.
+
+The old version (if updating) is marked as `superseded`. The new version becomes `active`.
+
+## Site Serving
+
+When someone visits `slug.supalink.dev`:
+
+1. The Worker extracts the subdomain (`slug`)
+2. Looks up the site in D1 to find the active version
+3. Fetches the requested file from R2 at `sites/{slug}/{versionId}/{path}`
+4. Returns it with appropriate caching headers
+
+If the requested path doesn't have an extension, the Worker tries `path/index.html` as a fallback (SPA-friendly serving).
+
+## Hash Deduplication
+
+When you update a site, files that haven't changed don't need to be re-uploaded:
+
+1. You send file hashes in the manifest
+2. The API compares them against the previous version's file hashes
+3. Matching files are copied server-side in R2 (zero-cost copy)
+4. Only new or changed files need to be uploaded
+
+This makes updates fast — even for large sites, you typically only upload the files you changed.
+
+## Slugs
+
+Every site gets a random slug like `bright-canvas-a7k2`. Slugs are:
+
+- Generated using a `adjective-noun-xxxx` pattern
+- Globally unique
+- Permanent (even if the site is deleted, the slug is never reused)
+
+## Anonymous vs Authenticated
+
+| | Anonymous | Authenticated |
+|---|---|---|
+| API key required | No | Yes |
+| Site expiry | 24 hours | Permanent |
+| Claimable | Yes (with claim token) | N/A |
+| Rate limit | 5 req/hour | 60+ req/hour |
+
+Anonymous sites receive a `claimToken` in the response. You can claim the site later by providing this token along with an API key, making it permanent.
+
+---
+
+# API Overview
+
+## Base URL
+
+```
+https://supalink.dev
+```
+
+All API endpoints are prefixed with `/api/v1/` or `/api/auth/`.
+
+## Authentication
+
+Authenticated endpoints require a Bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer sl_live_your_api_key_here
+```
+
+API keys have the format `sl_live_` followed by 32 hex characters. See [Authentication](/api-reference/authentication) for how to get one.
+
+Some endpoints work without authentication (anonymous publishing), but with limitations.
+
+## Content Type
+
+All request bodies must be JSON:
+
+```
+Content-Type: application/json
+```
+
+## Response Format
+
+All responses return JSON. Successful responses include the relevant data. Error responses follow a consistent format:
+
+```json
+{
+  "error": "Description of what went wrong",
+  "code": "ERROR_CODE",
+  "status": 400
+}
+```
+
+See [Errors](/api-reference/errors) for all error codes.
+
+## Rate Limiting
+
+Every API response includes rate limit headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1711050000
+```
+
+See [Rate Limits](/api-reference/rate-limits) for limits per plan.
+
+## Endpoints
+
+### Publishing
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/publish` | [Create a new site](/api-reference/publish) |
+| `PUT` | `/api/v1/_upload/:key` | [Upload a file](/api-reference/upload) |
+| `POST` | `/api/v1/publish/:slug/finalize` | [Finalize and go live](/api-reference/finalize) |
+| `PUT` | `/api/v1/publish/:slug` | [Update an existing site](/api-reference/update) |
+
+### Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/publishes` | [List all sites](/api-reference/list-sites) |
+| `GET` | `/api/v1/publish/:slug` | [Get site details](/api-reference/get-site) |
+| `DELETE` | `/api/v1/publish/:slug` | [Delete a site](/api-reference/delete-site) |
+| `POST` | `/api/v1/publish/:slug/duplicate` | [Duplicate a site](/api-reference/duplicate-site) |
+| `PATCH` | `/api/v1/publish/:slug/metadata` | [Update metadata](/api-reference/update-metadata) |
+| `POST` | `/api/v1/publish/:slug/claim` | [Claim anonymous site](/api-reference/claim-site) |
+
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/agent/request-code` | [Request verification code](/api-reference/authentication#request-a-verification-code) |
+| `POST` | `/api/auth/agent/verify-code` | [Verify code and get API key](/api-reference/authentication#verify-code-and-get-api-key) |
+
+---
+
+# Authentication
+
+## How Authentication Works
+
+Supalink uses **email-based authentication**. There are no passwords — you verify your email with a one-time code and receive an API key.
+
+The API key is used for all authenticated requests via the `Authorization` header:
+
+```
+Authorization: Bearer sl_live_your_api_key_here
+```
+
+## Request a Verification Code
+
+Send a verification code to an email address.
+
+**Parameters:**
+
+- `email` (string, required): The email address to send the code to.
+
+```bash
+curl -X POST https://supalink.dev/api/auth/agent/request-code \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com"}'
+```
+
+### Response
+
+```json
+{
+  "message": "Verification code sent to your email",
+  "email": "you@example.com",
+  "expiresInSeconds": 600
+}
+```
+
+The code expires in **10 minutes**. It arrives as an email with the format `XXXX-XXXX` (letters and numbers).
+
+## Verify Code and Get API Key
+
+Exchange the verification code for an API key.
+
+**Parameters:**
+
+- `email` (string, required): The same email address you requested the code for.
+- `code` (string, required): The verification code from your email (format: `XXXX-XXXX`).
+
+```bash
+curl -X POST https://supalink.dev/api/auth/agent/verify-code \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "code": "ABCD-1234"}'
+```
+
+### Response
+
+Existing User (200):
+
+```json
+{
+  "message": "Verified! Here is your API key.",
+  "apiKey": "sl_live_1981ecdf8dbb8c20c7da2b068ccbc12a",
+  "email": "you@example.com",
+  "plan": "free",
+  "isNewUser": false,
+  "warning": "IMPORTANT: Save this API key now. It is shown only once and cannot be retrieved later."
+}
+```
+
+New User (201):
+
+```json
+{
+  "message": "Verified! Here is your API key.",
+  "apiKey": "sl_live_a4f2e8c9b1d3f6e7a0c5d2b4e8f1a3c6",
+  "email": "you@example.com",
+  "plan": "free",
+  "isNewUser": true,
+  "warning": "IMPORTANT: Save this API key now. It is shown only once and cannot be retrieved later."
+}
+```
+
+The API key is displayed **only once**. Save it immediately. If you lose it, you'll need to verify your email again to generate a new one (the old key is invalidated).
+
+## Using the API Key
+
+Set it as an environment variable:
+
+```bash
+export SUPALINK_API_KEY="sl_live_your_key_here"
+```
+
+Or pass it directly in requests:
+
+```bash
+curl -X GET https://supalink.dev/api/v1/publishes \
+  -H "Authorization: Bearer sl_live_your_key_here"
+```
+
+## API Key Format
+
+API keys follow this pattern:
+
+```
+sl_live_ + 32 lowercase hex characters
+```
+
+Example: `sl_live_1981ecdf8dbb8c20c7da2b068ccbc12a`
+
+---
+
+# Create a Site
+
+## Create a New Site
+
+Creates a new site with a randomly generated slug and returns presigned upload URLs for each file.
+
+```
+POST /api/v1/publish
+```
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `application/json` |
+| `Authorization` | No | `Bearer sl_live_...` — omit for anonymous publishing |
+
+### Request Body
+
+**Parameters:**
+
+- `files` (array, required): Array of file objects to publish. Must contain at least one file. Maximum 1,000 files.
+  - `path` (string, required): Relative file path. No leading `/`, no `..` traversal. Max 500 characters.
+  - `size` (number, required): File size in bytes. Must be positive.
+  - `contentType` (string, required): MIME type (e.g., `text/html`, `image/png`, `application/javascript`).
+  - `hash` (string, optional): SHA-256 hex hash (64 lowercase hex characters). Enables deduplication on updates.
+
+- `viewer` (object, optional): Optional metadata for the site viewer page.
+  - `title` (string, optional): Page title shown in browser tab and social previews.
+  - `description` (string, optional): Meta description for social previews.
+  - `ogImagePath` (string, optional): Path to an image in the file manifest to use as the Open Graph image.
+
+### Example Request
+
+```bash
+curl -X POST https://supalink.dev/api/v1/publish \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{
+    "files": [
+      {
+        "path": "index.html",
+        "size": 1024,
+        "contentType": "text/html",
+        "hash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      },
+      {
+        "path": "style.css",
+        "size": 512,
+        "contentType": "text/css",
+        "hash": "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5"
+      }
+    ]
+  }'
+```
+
+### Response (201)
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "upload": {
+    "versionId": "01jm4abc123def456",
+    "uploads": [
+      {
+        "path": "index.html",
+        "method": "PUT",
+        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=...&ct=text%2Fhtml&exp=...",
+        "headers": {
+          "Content-Type": "text/html"
+        }
+      },
+      {
+        "path": "style.css",
+        "method": "PUT",
+        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Fstyle.css?token=...&ct=text%2Fcss&exp=...",
+        "headers": {
+          "Content-Type": "text/css"
+        }
+      }
+    ],
+    "skipped": [],
+    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+    "expiresInSeconds": 3600
+  }
+}
+```
+
+### Anonymous Publish Response
+
+When no `Authorization` header is provided, the response includes additional fields:
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "claimToken": "550e8400-e29b-41d4-a716-446655440000",
+  "claimUrl": "https://supalink.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
+  "expiresAt": "2026-03-21T20:00:00.000Z",
+  "anonymous": true,
+  "warning": "IMPORTANT: Save the claimToken and claimUrl. Returned only once.",
+  "upload": { ... }
+}
+```
+
+Save the `claimToken` immediately. It is returned **only once** and is needed to claim the site later. Anonymous sites expire in 24 hours.
+
+### Validation Rules
+
+- `files` array must not be empty
+- Maximum 1,000 files per site
+- No duplicate file paths
+- Paths cannot contain `..` or start with `/`
+- Paths cannot contain null bytes
+- Path max length: 500 characters
+- `hash` must be exactly 64 lowercase hex characters if provided
+
+---
+
+# Upload Files
+
+## Upload a File
+
+Upload a file's raw bytes to the presigned URL returned by the Create or Update endpoints.
+
+```
+PUT <upload.url from create/update response>
+```
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | Must match the content type from the upload object's `headers` |
+
+### Request Body
+
+The raw file bytes. Do **not** wrap in JSON — send the file content directly.
+
+### Example
+
+```bash
+# Using the URL from the create response
+curl -X PUT "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=abc123&ct=text%2Fhtml&exp=1711050000000" \
+  -H "Content-Type: text/html" \
+  --data-binary "@./dist/index.html"
+```
+
+### Response (200)
+
+Empty body on success.
+
+### Errors
+
+| Status | Reason |
+|--------|--------|
+| 400 | Upload URL has expired (1 hour TTL) |
+| 400 | No request body provided |
+| 500 | Upload to storage failed |
+
+### Important Notes
+
+Upload URLs expire after **1 hour**. If they expire, you'll need to create a new version by calling the publish endpoint again.
+
+- Upload all files listed in the `uploads` array before calling Finalize
+- Files in the `skipped` array (hash matches) do not need to be uploaded
+- Upload order doesn't matter — you can upload files in parallel
+- The `--data-binary` flag is important when using curl — it preserves the raw bytes without any processing
+
+---
+
+# Finalize
+
+## Finalize a Site
+
+After uploading all files, call finalize to make the site live. The API verifies every file has been uploaded to storage before activating the version.
+
+```
+POST /api/v1/publish/:slug/finalize
+```
+
+### Path Parameters
+
+- `slug` (string, required): The site slug (e.g., `bright-canvas-a7k2`).
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `application/json` |
+| `Authorization` | Conditional | Required for authenticated sites. Not needed for anonymous sites. |
+
+### Request Body
+
+- `versionId` (string, required): The version ID from the create/update response at `upload.versionId`.
+
+### Example
+
+```bash
+curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{"versionId": "01jm4abc123def456"}'
+```
+
+### Response (200)
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "versionId": "01jm4abc123def456",
+  "status": "active"
+}
+```
+
+The site is now live at the `siteUrl`.
+
+### Errors
+
+| Status | Code | Reason |
+|--------|------|--------|
+| 404 | `NOT_FOUND` | Site not found |
+| 401 | `UNAUTHORIZED` | Not authorized to finalize this site |
+| 400 | `INVALID_REQUEST` | `versionId` doesn't match the pending version |
+| 400 | `INVALID_REQUEST` | Not all files have been uploaded |
+
+Finalize will fail if any file in the manifest hasn't been uploaded yet. Make sure all uploads complete before calling finalize.
+
+---
+
+# Update a Site
+
+## Update an Existing Site
+
+Publish a new version of an existing site. Uses hash deduplication — files with matching hashes are copied server-side and don't need to be re-uploaded.
+
+```
+PUT /api/v1/publish/:slug
+```
+
+### Path Parameters
+
+- `slug` (string, required): The site slug to update (e.g., `bright-canvas-a7k2`).
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `application/json` |
+| `Authorization` | Yes | `Bearer sl_live_...` |
+
+### Request Body
+
+Same as Create a Site. The `files` array contains the complete file manifest for the new version.
+
+- `files` (array, required): Complete file manifest for the new version. Include **all** files, not just changed ones.
+
+### Example
+
+```bash
+curl -X PUT https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{
+    "files": [
+      {
+        "path": "index.html",
+        "size": 2048,
+        "contentType": "text/html",
+        "hash": "newsha256hash64charslong..."
+      },
+      {
+        "path": "style.css",
+        "size": 512,
+        "contentType": "text/css",
+        "hash": "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5"
+      }
+    ]
+  }'
+```
+
+### Response (200)
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "upload": {
+    "versionId": "01jm4new789ghi012",
+    "uploads": [
+      {
+        "path": "index.html",
+        "method": "PUT",
+        "url": "https://supalink.dev/api/v1/_upload/...",
+        "headers": { "Content-Type": "text/html" }
+      }
+    ],
+    "skipped": [
+      {
+        "path": "style.css",
+        "reason": "hash_match"
+      }
+    ],
+    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+    "expiresInSeconds": 3600
+  }
+}
+```
+
+### How Deduplication Works
+
+1. Include the `hash` field (SHA-256) for each file in the manifest
+2. The API compares each hash against the previous version's files
+3. Files with matching hashes appear in the `skipped` array — they are copied server-side
+4. Only files in the `uploads` array need to be uploaded
+
+Always include hashes when updating. Without hashes, every file is treated as new and must be re-uploaded.
+
+After uploading the non-skipped files, call Finalize with the new `versionId`.
+
+---
+
+# List Sites
+
+## List All Sites
+
+Returns all sites owned by the authenticated user.
+
+```
+GET /api/v1/publishes
+```
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer sl_live_...` |
+
+### Example
+
+```bash
+curl -X GET https://supalink.dev/api/v1/publishes \
+  -H "Authorization: Bearer sl_live_your_key_here"
+```
+
+### Response (200)
+
+```json
+{
+  "sites": [
+    {
+      "slug": "bright-canvas-a7k2",
+      "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+      "status": "active",
+      "title": "My Project",
+      "fileCount": 5,
+      "totalSize": 102400,
+      "createdAt": "2026-03-19T20:37:48.537Z",
+      "updatedAt": "2026-03-19T20:50:57.655Z",
+      "expiresAt": null
+    },
+    {
+      "slug": "deep-dock-h336",
+      "siteUrl": "https://deep-dock-h336.supalink.dev/",
+      "status": "pending",
+      "title": null,
+      "fileCount": 0,
+      "totalSize": 0,
+      "createdAt": "2026-03-20T10:15:00.000Z",
+      "updatedAt": "2026-03-20T10:15:00.000Z",
+      "expiresAt": null
+    }
+  ],
+  "total": 2
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `slug` | string | The site's unique identifier |
+| `siteUrl` | string | The live URL |
+| `status` | string | `active`, `pending`, or `expired` |
+| `title` | string \| null | The site title (from metadata) |
+| `fileCount` | number | Number of files in the current version |
+| `totalSize` | number | Total size in bytes of all files |
+| `createdAt` | string | ISO 8601 timestamp |
+| `updatedAt` | string | ISO 8601 timestamp |
+| `expiresAt` | string \| null | Expiry timestamp (null = permanent) |
+
+---
+
+# Get Site Details
+
+## Get Site Details
+
+Returns full details about a specific site, including the complete file list.
+
+```
+GET /api/v1/publish/:slug
+```
+
+### Path Parameters
+
+- `slug` (string, required): The site slug (e.g., `bright-canvas-a7k2`).
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer sl_live_...` |
+
+### Example
+
+```bash
+curl -X GET https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
+  -H "Authorization: Bearer sl_live_your_key_here"
+```
+
+### Response (200)
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "status": "active",
+  "versionId": "01jm4abc123def456",
+  "title": "My Project",
+  "description": "A cool project",
+  "ogImagePath": "og.png",
+  "hasPassword": false,
+  "createdAt": "2026-03-19T20:37:48.537Z",
+  "updatedAt": "2026-03-19T20:50:57.655Z",
+  "expiresAt": null,
+  "files": [
+    {
+      "path": "index.html",
+      "size": 1024,
+      "contentType": "text/html",
+      "hash": "a1b2c3d4e5f6..."
+    },
+    {
+      "path": "style.css",
+      "size": 512,
+      "contentType": "text/css",
+      "hash": "f6e5d4c3b2a1..."
+    }
+  ]
+}
+```
+
+### Errors
+
+| Status | Code | Reason |
+|--------|------|--------|
+| 401 | `UNAUTHORIZED` | Invalid or missing API key |
+| 404 | `NOT_FOUND` | Site not found or not owned by this user |
+
+---
+
+# Delete a Site
+
+## Delete a Site
+
+Permanently deletes a site and all its files from storage.
+
+```
+DELETE /api/v1/publish/:slug
+```
+
+### Path Parameters
+
+- `slug` (string, required): The site slug to delete (e.g., `bright-canvas-a7k2`).
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer sl_live_...` |
+
+### Example
+
+```bash
+curl -X DELETE https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
+  -H "Authorization: Bearer sl_live_your_key_here"
+```
+
+### Response (200)
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "deleted": true
+}
+```
+
+This action is permanent. The site, all its versions, and all files are deleted from storage. The slug is retired and cannot be reused.
+
+### Errors
+
+| Status | Code | Reason |
+|--------|------|--------|
+| 401 | `UNAUTHORIZED` | Invalid or missing API key |
+| 404 | `NOT_FOUND` | Site not found or not owned by this user |
+
+---
+
+# Duplicate a Site
+
+## Duplicate a Site
+
+Creates a copy of an existing site under a new slug. All files are copied server-side in storage — no client upload needed.
+
+```
+POST /api/v1/publish/:slug/duplicate
+```
+
+### Path Parameters
+
+- `slug` (string, required): The slug of the site to duplicate (e.g., `bright-canvas-a7k2`).
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Yes | `Bearer sl_live_...` |
+
+### Example
+
+```bash
+curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/duplicate \
+  -H "Authorization: Bearer sl_live_your_key_here"
+```
+
+### Response (201)
+
+```json
+{
+  "slug": "cool-river-x9f3",
+  "siteUrl": "https://cool-river-x9f3.supalink.dev/",
+  "versionId": "01jm4xyz789ghi012",
+  "copiedFrom": "bright-canvas-a7k2",
+  "status": "active"
+}
+```
+
+The new site is immediately live — no finalize step needed since files are copied server-side.
+
+### Errors
+
+| Status | Code | Reason |
+|--------|------|--------|
+| 401 | `UNAUTHORIZED` | Invalid or missing API key |
+| 404 | `NOT_FOUND` | Source site not found or not owned by this user |
+
+---
+
+# Update Metadata
+
+## Update Site Metadata
+
+Update a site's metadata without publishing a new version. Use this to change the title, description, add password protection, or set an expiry.
+
+```
+PATCH /api/v1/publish/:slug/metadata
+```
+
+### Path Parameters
+
+- `slug` (string, required): The site slug (e.g., `bright-canvas-a7k2`).
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `application/json` |
+| `Authorization` | Yes | `Bearer sl_live_...` |
+
+### Request Body
+
+All fields are optional. Only include the fields you want to change. Set a field to `null` to clear it.
+
+- `title` (string | null): Page title shown in browser tab and social previews.
+- `description` (string | null): Meta description for social previews.
+- `ogImagePath` (string | null): Path to an existing file in the site to use as the Open Graph image.
+- `password` (string | null): Set a password to protect the site. Set to `null` to remove protection. Passwords are hashed server-side.
+- `ttlSeconds` (number | null): Set an expiry in seconds from now. Set to `null` to make permanent.
+
+### Example
+
+```bash
+curl -X PATCH https://supalink.dev/api/v1/publish/bright-canvas-a7k2/metadata \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{
+    "title": "My Project",
+    "description": "A cool project",
+    "password": "secret123"
+  }'
+```
+
+### Response (200)
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "updated": true
+}
+```
+
+---
+
+# Claim a Site
+
+## Claim an Anonymous Site
+
+Transfer ownership of an anonymous site to your account, making it permanent.
+
+When you publish without an API key, the site is anonymous and expires in 24 hours. The response includes a `claimToken` that you can use later to claim the site.
+
+```
+POST /api/v1/publish/:slug/claim
+```
+
+### Path Parameters
+
+- `slug` (string, required): The slug of the anonymous site to claim.
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Yes | `application/json` |
+| `Authorization` | Yes | `Bearer sl_live_...` — you must be authenticated to claim a site |
+
+### Request Body
+
+- `claimToken` (string, required): The claim token from the original anonymous publish response.
+
+### Example
+
+```bash
+curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{"claimToken": "550e8400-e29b-41d4-a716-446655440000"}'
+```
+
+### Response (200)
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "owner": "you@example.com",
+  "message": "Site claimed successfully! It is now permanent and linked to your account."
+}
+```
+
+After claiming, the site:
+- No longer expires
+- Appears in your site list
+- Can be updated and managed like any other site
+
+### Errors
+
+| Status | Code | Reason |
+|--------|------|--------|
+| 401 | `UNAUTHORIZED` | Invalid or missing API key |
+| 404 | `NOT_FOUND` | Site not found |
+| 400 | `INVALID_REQUEST` | Invalid claim token |
+| 400 | `INVALID_REQUEST` | Site has already been claimed |
+| 400 | `INVALID_REQUEST` | Site has expired |
+
+---
+
+# Errors
+
+## Error Response Format
+
+All API errors return JSON with a consistent structure:
+
+```json
+{
+  "error": "Description of what went wrong",
+  "code": "ERROR_CODE",
+  "status": 400
+}
+```
+
+## Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `INVALID_REQUEST` | 400 | Request validation failed — missing or invalid fields |
+| `INVALID_PATH` | 400 | File path validation failed (contains `..`, starts with `/`, etc.) |
+| `INVALID_HASH` | 400 | Hash is not a valid 64-character lowercase hex string |
+| `UNAUTHORIZED` | 401 | Missing, invalid, or expired API key |
+| `NOT_FOUND` | 404 | Resource not found or not owned by the authenticated user |
+| `RATE_LIMITED` | 429 | Rate limit exceeded — check `X-RateLimit-Reset` header |
+| `FILE_TOO_LARGE` | 413 | Individual file exceeds plan limit (250 MB free, 5 GB hobby) |
+| `STORAGE_EXCEEDED` | 413 | Total storage quota exceeded (10 GB free, 100 GB hobby) |
+| `SITE_LIMIT_EXCEEDED` | 403 | Maximum site count reached (500 for free plan) |
+| `PLAN_LIMIT` | 403 | Feature not available on current plan |
+| `INTERNAL_ERROR` | 500 | Unexpected server error |
+
+## Common Scenarios
+
+### Invalid API Key
+
+```json
+{
+  "error": "Invalid API key",
+  "code": "UNAUTHORIZED",
+  "status": 401
+}
+```
+
+**Fix:** Check that your API key starts with `sl_live_` and is complete (no truncation).
+
+### Rate Limited
+
+```json
+{
+  "error": "Rate limit exceeded. Try again later.",
+  "code": "RATE_LIMITED",
+  "status": 429
+}
+```
+
+**Fix:** Wait until the time indicated by the `X-RateLimit-Reset` header. See Rate Limits.
+
+### Storage Exceeded
+
+```json
+{
+  "error": "Storage quota exceeded. Current usage: 9.8 GB of 10 GB.",
+  "code": "STORAGE_EXCEEDED",
+  "status": 413
+}
+```
+
+**Fix:** Delete unused sites to free storage, or upgrade to the Hobby plan for 100 GB.
+
+### File Path Invalid
+
+```json
+{
+  "error": "Invalid file path: ../etc/passwd",
+  "code": "INVALID_PATH",
+  "status": 400
+}
+```
+
+**Fix:** File paths must be relative (no leading `/`), cannot contain `..`, and must be under 500 characters.
+
+---
+
+# Rate Limits
+
+## Rate Limit Headers
+
+Every API response includes rate limit information:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests allowed per hour |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+
+## Limits by Plan
+
+| Plan | Requests per Hour |
+|------|-------------------|
+| Anonymous (no API key) | 5 per IP address |
+| Free | 60 |
+| Hobby ($4/mo) | 200 |
+
+The rate limit window is **1 hour**, aligned to the top of the hour.
+
+## When You Hit the Limit
+
+You'll receive a `429` response:
+
+```json
+{
+  "error": "Rate limit exceeded. Try again later.",
+  "code": "RATE_LIMITED",
+  "status": 429
+}
+```
+
+Check the `X-RateLimit-Reset` header for when you can retry.
+
+## Exempt Endpoints
+
+File upload endpoints (`PUT /api/v1/_upload/*`) are **not rate limited**. They are already gated by upload tokens and expiry timestamps.
+
+## Tips
+
+If you're hitting rate limits on the Free plan, consider upgrading to Hobby ($4/mo) for 200 requests per hour — more than enough for most workflows.
+
+- Batch your operations where possible
+- Use hash deduplication to reduce the number of API calls when updating sites
+- The publish script handles everything in a single create -> upload -> finalize flow
+
+---
+
+# Publish with Script
+
+## The Publish Script
+
+`publish.sh` is a self-contained bash script that handles the entire publish flow: scanning files, computing hashes, uploading, and finalizing.
+
+## Download
+
+```bash
+curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+```
+
+## Requirements
+
+- `curl` — for HTTP requests
+- `jq` — for JSON parsing
+- `shasum` or `sha256sum` — for file hashing (pre-installed on macOS and most Linux)
+
+## Usage
+
+### Publish a new site
+
+```bash
+./publish.sh ./my-directory
+```
+
+### Update an existing site
+
+```bash
+./publish.sh ./my-directory existing-slug
+```
+
+### With authentication (permanent sites)
+
+```bash
+export SUPALINK_API_KEY="sl_live_your_key_here"
+./publish.sh ./dist
+```
+
+### Custom API base URL
+
+```bash
+export SUPALINK_BASE="https://supalink.dev"
+./publish.sh ./dist
+```
+
+## What the Script Does
+
+1. **Scan files** — Recursively finds all files in the directory and builds a JSON manifest with relative paths, sizes, content types, and SHA-256 hashes.
+2. **Create or update** — Sends the manifest to `POST /api/v1/publish` (new site) or `PUT /api/v1/publish/:slug` (update).
+3. **Upload files** — Uploads each file to its presigned URL. Files that match by hash are skipped automatically.
+4. **Finalize** — Calls the finalize endpoint to make the site live.
+
+## Output
+
+```
+Scanning files...
+  Found 12 file(s)
+Creating site...
+  Site: bright-canvas-a7k2
+  Skipped (dedup): 0 file(s)
+Uploading 12 file(s)...
+  [1/12] index.html
+  [2/12] style.css
+  ...
+Finalizing...
+
+Published!
+   URL:  https://bright-canvas-a7k2.supalink.dev/
+   Slug: bright-canvas-a7k2
+```
+
+## Supported File Types
+
+The script automatically detects content types for common file extensions:
+
+| Category | Extensions |
+|----------|-----------|
+| Web | `.html`, `.css`, `.js`, `.json`, `.xml`, `.svg` |
+| Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`, `.ico` |
+| Fonts | `.woff`, `.woff2`, `.ttf`, `.otf` |
+| Media | `.mp4`, `.webm`, `.mp3`, `.ogg`, `.wav` |
+| Documents | `.pdf`, `.txt`, `.md`, `.csv` |
+| Other | `.zip` and any unrecognized extension (`application/octet-stream`) |
+
+## CI/CD Integration
+
+You can use the script in any CI/CD pipeline:
+
+```yaml
+# GitHub Actions example
+- name: Publish to Supalink
+  env:
+    SUPALINK_API_KEY: ${{ secrets.SUPALINK_API_KEY }}
+  run: |
+    curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+    ./publish.sh ./dist
+```
+
+---
+
+# Custom Domains
+
+## Overview
+
+You can point your own domain (or subdomain) to any Supalink site. SSL certificates are provisioned automatically.
+
+| Plan | Custom Domains |
+|------|---------------|
+| Free | 1 |
+| Hobby ($4/mo) | 5 |
+
+## Setup
+
+### Step 1: Add the domain in your dashboard
+
+1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+2. Click the **Domains** tab
+3. Click **+ Add Domain**
+4. Enter your domain (e.g., `docs.mysite.com`)
+
+### Step 2: Configure DNS
+
+Add these DNS records at your domain registrar or DNS provider:
+
+#### CNAME Record
+
+| Type | Name | Target |
+|------|------|--------|
+| CNAME | `docs` (or your subdomain) | `proxy.supalink.dev` |
+
+#### TXT Record (verification)
+
+| Type | Name | Value |
+|------|------|-------|
+| TXT | `_supalink.docs` (or `_supalink.yoursubdomain`) | The verification code shown in the dashboard |
+
+### Step 3: Wait for verification
+
+DNS changes can take up to 48 hours to propagate, but typically complete within a few minutes. The domain status in your dashboard will change from **Pending** to **Active** once verified.
+
+## Using a Root Domain
+
+For root/apex domains (e.g., `mysite.com` without a subdomain), you need a DNS provider that supports CNAME flattening or ALIAS records:
+
+- **Cloudflare** — Supports CNAME flattening (use CNAME at root)
+- **Route 53** — Use an ALIAS record
+- **DNSimple** — Use an ALIAS record
+
+Not all DNS providers support this. If yours doesn't, use a subdomain like `www.mysite.com` instead.
+
+## SSL Certificates
+
+SSL certificates are provisioned and renewed automatically through Cloudflare. You don't need to do anything — HTTPS just works once the domain is verified.
+
+## Managing Domains via API
+
+You can also manage custom domains through the API:
+
+```bash
+# List your domains
+curl -X GET https://supalink.dev/api/v1/domains \
+  -H "Authorization: Bearer sl_live_your_key_here"
+
+# Add a domain
+curl -X POST https://supalink.dev/api/v1/domains \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{"domain": "docs.mysite.com", "siteSlug": "bright-canvas-a7k2"}'
+
+# Remove a domain
+curl -X DELETE https://supalink.dev/api/v1/domains/docs.mysite.com \
+  -H "Authorization: Bearer sl_live_your_key_here"
+```
+
+---
+
+# Handle
+
+## What is a Handle?
+
+A handle gives you a personalized URL at `yourname.supalink.dev`. It's like a username for your Supalink profile.
+
+Handles are available on the **Hobby plan** ($4/mo) only.
+
+## Setting Your Handle
+
+1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+2. Click the **Handle** tab
+3. Enter your desired handle
+4. Click **Save Changes**
+
+### Handle Rules
+
+- Lowercase letters, numbers, and hyphens only
+- Cannot start or end with a hyphen
+- Must be unique across all users
+- Can be changed at any time (your old handle is released)
+
+## Using Your Handle
+
+Once set, your handle URL (`yourname.supalink.dev`) is active. You can configure what it points to in the dashboard.
+
+## Managing via API
+
+```bash
+# Get your current handle
+curl -X GET https://supalink.dev/api/v1/handle \
+  -H "Authorization: Bearer sl_live_your_key_here"
+
+# Set or update your handle
+curl -X PUT https://supalink.dev/api/v1/handle \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{"handle": "yourname"}'
+```
+
+---
+
+# Anonymous Publishing
+
+## How It Works
+
+You can publish to Supalink without an API key. Anonymous sites:
+
+- Are live immediately at `slug.supalink.dev`
+- **Expire in 24 hours** automatically
+- Come with a **claim token** to make them permanent later
+- Are rate limited to **5 requests per hour** per IP
+
+## Publish Anonymously
+
+### With the script
+
+Just don't set `SUPALINK_API_KEY`:
+
+```bash
+./publish.sh ./my-site
+```
+
+### With the API
+
+Omit the `Authorization` header:
+
+```bash
+curl -X POST https://supalink.dev/api/v1/publish \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": [
+      {"path": "index.html", "size": 512, "contentType": "text/html"}
+    ]
+  }'
+```
+
+### Response
+
+The response includes extra fields for anonymous publishes:
+
+```json
+{
+  "slug": "bright-canvas-a7k2",
+  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "claimToken": "550e8400-e29b-41d4-a716-446655440000",
+  "claimUrl": "https://supalink.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
+  "expiresAt": "2026-03-21T20:00:00.000Z",
+  "anonymous": true,
+  "warning": "IMPORTANT: Save the claimToken and claimUrl. Returned only once.",
+  "upload": { ... }
+}
+```
+
+**Save the `claimToken` immediately.** It is returned only once and cannot be retrieved later. You need it to claim the site.
+
+## Claim a Site
+
+To make an anonymous site permanent, claim it with your API key and the claim token:
+
+```bash
+curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sl_live_your_key_here" \
+  -d '{"claimToken": "550e8400-e29b-41d4-a716-446655440000"}'
+```
+
+After claiming:
+- The site no longer expires
+- It appears in your dashboard
+- You can update, delete, and manage it normally
+
+## Use Cases
+
+- **Quick demos** — Share a prototype without signing up
+- **CI previews** — Generate deploy previews in PRs
+- **One-off sharing** — Share a file for a day, it cleans up automatically
+- **Try before committing** — Test Supalink before creating an account
+
+---
+
+# Hash Deduplication
+
+## How It Works
+
+When you update an existing site, Supalink compares SHA-256 hashes of each file against the previous version. Files that haven't changed are copied server-side — no re-upload needed.
+
+This makes updates fast, even for large sites with hundreds of files.
+
+## The Flow
+
+1. **Send manifest with hashes** — Include the `hash` field for each file in your update request:
+
+```json
+{
+  "files": [
+    {"path": "index.html", "size": 2048, "contentType": "text/html", "hash": "abc123..."},
+    {"path": "style.css", "size": 512, "contentType": "text/css", "hash": "def456..."}
+  ]
+}
+```
+
+2. **API compares hashes** — The API checks each file's hash against the same file path in the previous version.
+
+3. **Matching files are skipped** — Files with identical hashes appear in the `skipped` array — they're copied internally, no upload needed.
+
+4. **Upload only changed files** — Only files in the `uploads` array need to be uploaded.
+
+## Example Response
+
+If you update a site where only `index.html` changed:
+
+```json
+{
+  "upload": {
+    "uploads": [
+      {"path": "index.html", "url": "...", "headers": {"Content-Type": "text/html"}}
+    ],
+    "skipped": [
+      {"path": "style.css", "reason": "hash_match"},
+      {"path": "logo.png", "reason": "hash_match"},
+      {"path": "app.js", "reason": "hash_match"}
+    ]
+  }
+}
+```
+
+Only 1 file needs uploading. The other 3 are copied server-side instantly.
+
+## Computing Hashes
+
+The hash must be a **SHA-256 hex digest** (64 lowercase hex characters).
+
+### macOS
+
+```bash
+shasum -a 256 index.html | cut -d' ' -f1
+```
+
+### Linux
+
+```bash
+sha256sum index.html | cut -d' ' -f1
+```
+
+### Node.js
+
+```javascript
+const crypto = require('crypto');
+const fs = require('fs');
+
+const hash = crypto.createHash('sha256')
+  .update(fs.readFileSync('index.html'))
+  .digest('hex');
+```
+
+### Python
+
+```python
+import hashlib
+
+with open('index.html', 'rb') as f:
+    hash = hashlib.sha256(f.read()).hexdigest()
+```
+
+The `publish.sh` script handles hashing automatically. You only need to compute hashes manually if you're building a custom integration with the API.
+
+## Without Hashes
+
+If you omit the `hash` field, every file is treated as new and must be uploaded. Always include hashes when updating to get the performance benefit.
+
+---
+
+# Plans & Limits
+
+## Plans
+
+Supalink offers two plans:
+
+**Free** — $0/month — Perfect for getting started.
+- 500 sites
+- 10 GB storage
+- 250 MB max file size
+- 1,000 files per site
+- 1 custom domain
+- 60 API requests/hour
+
+**Hobby** — $4/month — For serious projects.
+- Unlimited sites
+- 100 GB storage
+- 5 GB max file size
+- 1,000 files per site
+- 5 custom domains
+- 200 API requests/hour
+- Custom handle
+
+## Detailed Comparison
+
+| Feature | Free | Hobby |
+|---------|------|-------|
+| **Sites** | 500 | Unlimited |
+| **Storage** | 10 GB | 100 GB |
+| **Max file size** | 250 MB | 5 GB |
+| **Files per site** | 1,000 | 1,000 |
+| **Custom domains** | 1 | 5 |
+| **Handle** | No | Yes |
+| **API rate limit** | 60 req/hr | 200 req/hr |
+| **Price** | $0 | $4/month |
+
+## Anonymous Publishing Limits
+
+Publishing without an API key has tighter limits:
+
+| Feature | Limit |
+|---------|-------|
+| Rate limit | 5 requests/hour per IP |
+| Site expiry | 24 hours |
+| Custom domains | Not available |
+| Handle | Not available |
+
+## Upgrading
+
+You can upgrade to Hobby from your dashboard:
+
+1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+2. Click the **Plan** tab
+3. Click **Upgrade to Hobby**
+4. Complete payment via LemonSqueezy
+
+Your limits are upgraded immediately after payment.
+
+## What Happens If You Hit a Limit?
+
+- **Site limit exceeded** — You'll receive a `SITE_LIMIT_EXCEEDED` error. Delete unused sites or upgrade.
+- **Storage exceeded** — You'll receive a `STORAGE_EXCEEDED` error. Delete unused sites to free space or upgrade.
+- **File too large** — You'll receive a `FILE_TOO_LARGE` error. Compress the file or upgrade for higher limits.
+- **Rate limited** — You'll receive a `RATE_LIMITED` error. Wait for the reset window or upgrade.
+
+All limits are enforced per-account, not per-site.
+
+---
+
+# Agent Skill Overview
+
+## What is the Supalink Skill?
+
+The Supalink skill lets AI coding agents (like Claude Code) publish files and folders to live URLs automatically. Once installed, just say "publish this" and the agent handles everything.
+
+## How It Works
+
+1. **Agent detects intent** — You say "publish this", "deploy my site", "give me a URL", or similar
+2. **Skill activates** — The agent loads the Supalink skill instructions
+3. **Files are published** — The agent runs `publish.sh` to scan, upload, and finalize
+4. **URL returned** — You get a live URL at `slug.supalink.dev`
+
+## Supported Agents
+
+The skill follows the open [Agent Skills](https://agentskills.io) standard and works with:
+
+- **Claude Code** — Full support via `npx skills add`
+- **Cursor** — Via the skills system
+- **Windsurf** — Via the skills system
+- **Other agents** — Any agent supporting the Agent Skills standard
+
+## Features
+
+- **Auto-Publish**: Say "publish this" and the agent handles the entire flow.
+- **Smart Detection**: Automatically finds build output directories (dist/, build/, out/).
+- **Auth Flow**: Guides you through email verification to get an API key on first use.
+- **Updates**: Say "update my site" and only changed files are re-uploaded.
+
+## Quick Install
+
+```bash
+npx skills add sk-code-01/supalink-skill --skill supalink -g
+```
+
+See [Installation](/skill/installation) for detailed setup instructions.
+
+---
+
+# Skill Installation
+
+## Install via npx
+
+The recommended way to install:
+
+```bash
+npx skills add sk-code-01/supalink-skill --skill supalink -g
+```
+
+The `-g` flag installs globally (available in all projects). Omit it for a project-local install.
+
+## Manual Install
+
+If `npx skills add` doesn't work, you can install manually:
+
+### Claude Code
+
+```bash
+mkdir -p ~/.claude/skills/supalink
+curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skills/supalink/SKILL.md \
+  -o ~/.claude/skills/supalink/SKILL.md
+```
+
+### Cursor
+
+```bash
+mkdir -p .cursor/skills/supalink
+curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skills/supalink/SKILL.md \
+  -o .cursor/skills/supalink/SKILL.md
+```
+
+## Verify Installation
+
+Start a new Claude Code session and type:
+
+```
+/supalink
+```
+
+If the skill is installed, Claude will activate it and ask what you want to publish.
+
+## Set Your API Key
+
+For permanent publishing, set your API key as an environment variable:
+
+```bash
+export SUPALINK_API_KEY="sl_live_your_key_here"
+```
+
+Add it to your shell profile (`~/.zshrc` or `~/.bashrc`) to persist across sessions:
+
+```bash
+echo 'export SUPALINK_API_KEY="sl_live_your_key_here"' >> ~/.zshrc
+```
+
+Don't have an API key? The skill will guide you through the authentication flow on first use. Just say "publish this" and follow the prompts.
+
+## Requirements
+
+The skill uses `publish.sh` which requires:
+
+- `curl` — Pre-installed on macOS and most Linux
+- `jq` — Pre-installed on macOS. Install on Linux: `sudo apt install jq`
+
+## Uninstall
+
+### Global
+
+```bash
+npx skills remove supalink -g
+```
+
+### Manual
+
+```bash
+rm -rf ~/.claude/skills/supalink
+```
+
+---
+
+# Skill Usage
+
+## Natural Language
+
+Just tell your agent what to publish. The skill triggers automatically on phrases like:
+
+- "Publish this project"
+- "Deploy my dist folder"
+- "Give me a live URL for this"
+- "Host this HTML file"
+- "Make this site live"
+- "Share this as a website"
+- "Update my site"
+
+## Slash Command
+
+You can also invoke the skill directly:
+
+```
+/supalink ./dist
+```
+
+Or without arguments (the skill will auto-detect what to publish):
+
+```
+/supalink
+```
+
+## Examples
+
+### Publish a project
+
+```
+You: "Publish my project to the web"
+
+Agent: I'll publish the ./dist directory to Supalink.
+       Scanning files... Found 15 files
+       Uploading 15 files...
+       Published!
+
+       https://bright-canvas-a7k2.supalink.dev/
+```
+
+### Update an existing site
+
+```
+You: "Update my site with the latest changes"
+
+Agent: I'll update bright-canvas-a7k2 with the new build.
+       Scanning files... Found 15 files
+       Skipped 12 files (unchanged)
+       Uploading 3 files...
+       Updated!
+
+       https://bright-canvas-a7k2.supalink.dev/
+```
+
+### First-time setup
+
+```
+You: "Publish this site"
+
+Agent: You need a Supalink API key for permanent publishing.
+       Would you like me to set one up? I'll need your email address.
+
+You: "yes, use me@example.com"
+
+Agent: I've sent a verification code to me@example.com.
+       Please check your email and paste the XXXX-XXXX code.
+
+You: "ABCD-1234"
+
+Agent: Authenticated! Your API key is set.
+       Now publishing...
+       https://bright-canvas-a7k2.supalink.dev/
+```
+
+## Auto-Detection
+
+When you don't specify a directory, the skill looks for common build outputs:
+
+1. `dist/` — Vite, Rollup, Parcel
+2. `build/` — Create React App, Webpack
+3. `out/` — Next.js static export
+4. `public/` — Static files
+5. `.next/out/` — Next.js
+
+If none are found, the agent asks you what to publish.
+
+## Tips
+
+Set `SUPALINK_API_KEY` in your shell profile so the skill can publish permanently without asking for authentication each time.
+
+- The skill remembers the slug from the last publish in the conversation, so "update my site" works without specifying the slug again
+- You can publish single files too — the skill creates a temporary directory automatically
+- The skill works with any file type: HTML, images, PDFs, videos, ZIP files, etc.

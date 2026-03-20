@@ -1,0 +1,2206 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Supalink API",
+    "version": "1.0.0",
+    "description": "Supalink.dev lets you publish any file or directory to a live URL in seconds. Built for AI agents. The publish flow is a 3-step process: Create (send file manifest, get upload URLs), Upload (PUT files to the provided URLs), Finalize (make the site live).",
+    "contact": {
+      "name": "Supalink",
+      "url": "https://supalink.dev"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://supalink.dev",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Two-step email verification to obtain an API key. No authentication header required for these endpoints."
+    },
+    {
+      "name": "Publish",
+      "description": "Create, update, finalize, and manage published sites. The core publish flow is Create -> Upload -> Finalize."
+    },
+    {
+      "name": "Domains",
+      "description": "Manage custom domains. Free plan allows 1 domain, Hobby plan allows 5."
+    },
+    {
+      "name": "Handle",
+      "description": "Manage vanity subdomains (e.g., yourname.supalink.dev). Requires the Hobby plan."
+    }
+  ],
+  "paths": {
+    "/api/auth/agent/request-code": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Request a verification code",
+        "description": "Sends a verification code (format XXXX-XXXX) to the provided email address. The user must read the code from their email and provide it to the agent. Codes expire after 10 minutes. There is a 60-second cooldown between requests for the same email.",
+        "operationId": "requestCode",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestCodeInput"
+              },
+              "example": {
+                "email": "user@example.com"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification code sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestCodeResponse"
+                },
+                "example": {
+                  "message": "Verification code sent to your email",
+                  "email": "user@example.com",
+                  "expiresInSeconds": 600
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "A valid email address is required",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited — too many code requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Please wait before requesting another code",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/agent/verify-code": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Verify code and get API key",
+        "description": "Verifies the email code and returns an API key. If the email is new, an account is created. If the email already exists, a new API key is generated (the old one is invalidated). The API key is shown only once and cannot be retrieved later. Max 5 verification attempts per code.",
+        "operationId": "verifyCode",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyCodeInput"
+              },
+              "example": {
+                "email": "user@example.com",
+                "code": "ABCD-1234"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing user verified — new API key issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyCodeResponse"
+                },
+                "example": {
+                  "message": "Verified! Here is your API key.",
+                  "apiKey": "sl_live_1981ecdf8dbb8c20c7da2b068ccbc12a",
+                  "email": "user@example.com",
+                  "plan": "free",
+                  "isNewUser": false,
+                  "warning": "IMPORTANT: Save this API key now. It is shown only once and cannot be retrieved later."
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New user created — API key issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyCodeResponse"
+                },
+                "example": {
+                  "message": "Account created! Here is your API key.",
+                  "apiKey": "sl_live_a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5",
+                  "email": "user@example.com",
+                  "plan": "free",
+                  "isNewUser": true,
+                  "warning": "IMPORTANT: Save this API key now. It is shown only once and cannot be retrieved later."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid code or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Invalid verification code. 4 attempt(s) remaining.",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publish": {
+      "post": {
+        "tags": ["Publish"],
+        "summary": "Create a new site",
+        "description": "Creates a new site by sending a file manifest. Returns upload URLs for each file. After uploading all files, call the finalize endpoint to make the site live. Authentication is optional — without it, the site is anonymous and expires in 24 hours. Anonymous sites return a claimToken that can be used later to transfer ownership.",
+        "operationId": "createSite",
+        "security": [
+          {},
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishInput"
+              },
+              "example": {
+                "files": [
+                  {
+                    "path": "index.html",
+                    "size": 1024,
+                    "contentType": "text/html",
+                    "hash": "a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890"
+                  },
+                  {
+                    "path": "style.css",
+                    "size": 512,
+                    "contentType": "text/css",
+                    "hash": "f6e5d4c3b2a10987f6e5d4c3b2a10987f6e5d4c3b2a10987f6e5d4c3b2a10987"
+                  }
+                ],
+                "viewer": {
+                  "title": "My Project",
+                  "description": "A cool project",
+                  "ogImagePath": "og.png"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Site created — upload URLs returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSiteResponse"
+                },
+                "example": {
+                  "slug": "bright-canvas-a7k2",
+                  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+                  "upload": {
+                    "versionId": "01jm4abc123def456",
+                    "uploads": [
+                      {
+                        "path": "index.html",
+                        "method": "PUT",
+                        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123def456%2Findex.html?token=abc123&ct=text%2Fhtml&exp=1711065600000",
+                        "headers": {
+                          "Content-Type": "text/html"
+                        }
+                      }
+                    ],
+                    "skipped": [],
+                    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+                    "expiresInSeconds": 3600
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or file manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "files array is required and must not be empty",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publish/{slug}": {
+      "put": {
+        "tags": ["Publish"],
+        "summary": "Update an existing site",
+        "description": "Publishes a new version of an existing site. Send the full file manifest. Files with matching SHA-256 hashes are automatically skipped (server copies them from the previous version). Only non-matching files need to be re-uploaded. After uploading, call finalize to make the new version live.",
+        "operationId": "updateSite",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishInput"
+              },
+              "example": {
+                "files": [
+                  {
+                    "path": "index.html",
+                    "size": 2048,
+                    "contentType": "text/html",
+                    "hash": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New version created — upload URLs returned for changed files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSiteResponse"
+                },
+                "example": {
+                  "slug": "bright-canvas-a7k2",
+                  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+                  "upload": {
+                    "versionId": "01jm4xyz789ghi012",
+                    "uploads": [
+                      {
+                        "path": "index.html",
+                        "method": "PUT",
+                        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4xyz789ghi012%2Findex.html?token=xyz789&ct=text%2Fhtml&exp=1711065600000",
+                        "headers": {
+                          "Content-Type": "text/html"
+                        }
+                      }
+                    ],
+                    "skipped": [
+                      {
+                        "path": "style.css",
+                        "reason": "hash_match"
+                      }
+                    ],
+                    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+                    "expiresInSeconds": 3600
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or file manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "files array is required and must not be empty",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Publish"],
+        "summary": "Get site details",
+        "description": "Returns full details about a site including its file list, metadata, status, and version information. Only the site owner can access this endpoint.",
+        "operationId": "getSite",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Site details returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSiteResponse"
+                },
+                "example": {
+                  "slug": "bright-canvas-a7k2",
+                  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+                  "status": "active",
+                  "versionId": "01jm4abc123def456",
+                  "title": null,
+                  "description": null,
+                  "ogImagePath": null,
+                  "hasPassword": false,
+                  "createdAt": "2026-03-19T20:37:48.537Z",
+                  "updatedAt": "2026-03-19T20:50:57.655Z",
+                  "expiresAt": null,
+                  "files": [
+                    {
+                      "path": "index.html",
+                      "size": 1024,
+                      "contentType": "text/html",
+                      "hash": "a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Publish"],
+        "summary": "Delete a site",
+        "description": "Permanently deletes a site. Removes all versions, files from storage (R2), and associated database records. This action cannot be undone.",
+        "operationId": "deleteSite",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Site deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteSiteResponse"
+                },
+                "example": {
+                  "slug": "bright-canvas-a7k2",
+                  "deleted": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publish/{slug}/finalize": {
+      "post": {
+        "tags": ["Publish"],
+        "summary": "Finalize a site (make it live)",
+        "description": "Finalizes a pending site version after all files have been uploaded. Verifies that every file in the manifest has been uploaded to storage, then activates the version. The site becomes live at its URL immediately. For anonymous sites, no auth header is needed.",
+        "operationId": "finalizeSite",
+        "security": [
+          {},
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalizeInput"
+              },
+              "example": {
+                "versionId": "01jm4abc123def456"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Site finalized and now live",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalizeResponse"
+                },
+                "example": {
+                  "slug": "bright-canvas-a7k2",
+                  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+                  "versionId": "01jm4abc123def456",
+                  "status": "active"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request — missing versionId, version mismatch, or files not yet uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "File not yet uploaded: index.html",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — not the site owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Unauthorized",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publishes": {
+      "get": {
+        "tags": ["Publish"],
+        "summary": "List all sites",
+        "description": "Returns all sites owned by the authenticated user, ordered by most recently updated. Includes basic metadata and file counts for each site. Deleted sites are excluded.",
+        "operationId": "listSites",
+        "responses": {
+          "200": {
+            "description": "List of sites returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListSitesResponse"
+                },
+                "example": {
+                  "sites": [
+                    {
+                      "slug": "bright-canvas-a7k2",
+                      "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+                      "status": "active",
+                      "title": null,
+                      "fileCount": 3,
+                      "totalSize": 4096,
+                      "createdAt": "2026-03-19T20:37:48.537Z",
+                      "updatedAt": "2026-03-19T20:50:57.655Z",
+                      "expiresAt": null
+                    }
+                  ],
+                  "total": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publish/{slug}/duplicate": {
+      "post": {
+        "tags": ["Publish"],
+        "summary": "Duplicate a site",
+        "description": "Creates a complete copy of a site under a new slug. All files are copied server-side in storage — no client upload is needed. The new site is immediately active. Only the site owner can duplicate it.",
+        "operationId": "duplicateSite",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Site duplicated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateSiteResponse"
+                },
+                "example": {
+                  "slug": "new-random-slug",
+                  "siteUrl": "https://new-random-slug.supalink.dev/",
+                  "versionId": "01jm4xyz789ghi012",
+                  "copiedFrom": "bright-canvas-a7k2",
+                  "status": "active"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Site has no active version to duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site has no active version to duplicate",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publish/{slug}/metadata": {
+      "patch": {
+        "tags": ["Publish"],
+        "summary": "Update site metadata",
+        "description": "Updates site metadata such as title, description, OG image path, password protection, and TTL. All fields are optional — only provided fields are updated. Set a field to null to clear it. Passwords are hashed server-side. Setting ttlSeconds also updates the expiresAt timestamp.",
+        "operationId": "patchMetadata",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchMetadataInput"
+              },
+              "example": {
+                "title": "My Project",
+                "description": "A cool project",
+                "password": "secret123",
+                "ttlSeconds": 86400
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatchMetadataResponse"
+                },
+                "example": {
+                  "slug": "bright-canvas-a7k2",
+                  "updated": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No fields to update or invalid JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "No fields to update",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required or unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/publish/{slug}/claim": {
+      "post": {
+        "tags": ["Publish"],
+        "summary": "Claim an anonymous site",
+        "description": "Transfers ownership of an anonymous site to the authenticated user's account. Requires the claimToken that was returned when the anonymous site was created. Once claimed, the site becomes permanent (no expiry) and is linked to the user's account.",
+        "operationId": "claimSite",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SlugParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimInput"
+              },
+              "example": {
+                "claimToken": "abc123def456ghi789jkl012mno345pq"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Site claimed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimResponse"
+                },
+                "example": {
+                  "slug": "bright-canvas-a7k2",
+                  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+                  "owner": "user@example.com",
+                  "message": "Site claimed successfully! It is now permanent and linked to your account."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid claim token, site already claimed, or site is not anonymous",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Invalid claim token",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required. Include your API key in the Authorization header.",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Site not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/domains": {
+      "get": {
+        "tags": ["Domains"],
+        "summary": "List custom domains",
+        "description": "Returns all custom domains owned by the authenticated user, including their verification status, SSL status, and DNS verification records.",
+        "operationId": "listDomains",
+        "responses": {
+          "200": {
+            "description": "List of domains returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListDomainsResponse"
+                },
+                "example": {
+                  "domains": [
+                    {
+                      "domain": "example.com",
+                      "status": "active",
+                      "sslStatus": "active",
+                      "isApex": true,
+                      "verificationTxtName": "_supalink.example.com",
+                      "verificationTxtValue": "supalink-verify=a1b2c3d4e5f67890a1b2c3d4e5f67890",
+                      "createdAt": "2026-03-19T20:37:48.537Z",
+                      "verifiedAt": "2026-03-19T21:00:00.000Z"
+                    }
+                  ],
+                  "total": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Domains"],
+        "summary": "Add a custom domain",
+        "description": "Registers a custom domain. Returns DNS records (CNAME and TXT) that must be configured at the domain's DNS provider. After configuring DNS, call POST /api/v1/domains/{domain}/verify to complete verification. Free plan allows 1 domain, Hobby plan allows 5.",
+        "operationId": "addDomain",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddDomainInput"
+              },
+              "example": {
+                "domain": "example.com"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Domain added — DNS configuration instructions returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddDomainResponse"
+                },
+                "example": {
+                  "domain": "example.com",
+                  "status": "pending",
+                  "dns": {
+                    "instructions": "Add these DNS records to example.com:",
+                    "records": [
+                      {
+                        "type": "CNAME",
+                        "name": "example.com",
+                        "value": "supalink.dev",
+                        "note": "Some DNS providers require ALIAS/ANAME for apex domains"
+                      },
+                      {
+                        "type": "TXT",
+                        "name": "_supalink.example.com",
+                        "value": "supalink-verify=a1b2c3d4e5f67890a1b2c3d4e5f67890",
+                        "note": "Proves you own this domain"
+                      }
+                    ]
+                  },
+                  "message": "Domain added. Configure DNS records, then call POST /api/v1/domains/:domain/verify"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid domain name or domain already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Invalid domain name",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/domains/{domain}": {
+      "delete": {
+        "tags": ["Domains"],
+        "summary": "Remove a custom domain",
+        "description": "Removes a custom domain and deletes all associated links and routing entries. This action cannot be undone.",
+        "operationId": "deleteDomain",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DomainParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Domain removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDomainResponse"
+                },
+                "example": {
+                  "domain": "example.com",
+                  "deleted": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Domain not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Domain not found",
+                  "code": "NOT_FOUND",
+                  "status": 404
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/handle": {
+      "get": {
+        "tags": ["Handle"],
+        "summary": "Get current handle",
+        "description": "Returns the authenticated user's current vanity handle (subdomain). If no handle is set, the handle field is null.",
+        "operationId": "getHandle",
+        "responses": {
+          "200": {
+            "description": "Handle returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetHandleResponse"
+                },
+                "example": {
+                  "handle": "sid",
+                  "url": "https://sid.supalink.dev/"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Handle"],
+        "summary": "Set or change handle",
+        "description": "Claims or changes the user's vanity handle (e.g., yourname.supalink.dev). Requires the Hobby plan ($4/mo). Handle must be 3-30 characters, lowercase letters/numbers/hyphens, cannot start or end with a hyphen. Reserved names (www, api, app, admin, etc.) are not allowed.",
+        "operationId": "setHandle",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetHandleInput"
+              },
+              "example": {
+                "handle": "sid"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Handle set successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetHandleResponse"
+                },
+                "example": {
+                  "handle": "sid",
+                  "url": "https://sid.supalink.dev/",
+                  "message": "Handle claimed successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid handle, reserved, or already taken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Invalid handle. Must be 3-30 characters, lowercase letters/numbers/hyphens, cannot start or end with a hyphen.",
+                  "code": "INVALID_REQUEST",
+                  "status": 400
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Authentication required",
+                  "code": "UNAUTHORIZED",
+                  "status": 401
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Rate limit exceeded",
+                  "code": "RATE_LIMITED",
+                  "status": 429
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key obtained from the auth flow. Format: sl_live_ followed by 32 hex characters. Pass as: Authorization: Bearer sl_live_..."
+      }
+    },
+    "parameters": {
+      "SlugParam": {
+        "name": "slug",
+        "in": "path",
+        "required": true,
+        "description": "The unique site slug (e.g., bright-canvas-a7k2)",
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "example": "bright-canvas-a7k2"
+        }
+      },
+      "DomainParam": {
+        "name": "domain",
+        "in": "path",
+        "required": true,
+        "description": "The custom domain name (e.g., example.com)",
+        "schema": {
+          "type": "string",
+          "example": "example.com"
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error", "code", "status"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code",
+            "enum": ["INVALID_REQUEST", "UNAUTHORIZED", "NOT_FOUND", "RATE_LIMITED", "PLAN_LIMIT", "INTERNAL_ERROR"]
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code"
+          }
+        }
+      },
+      "RequestCodeInput": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "The email address to send the verification code to",
+            "maxLength": 320
+          }
+        }
+      },
+      "RequestCodeResponse": {
+        "type": "object",
+        "required": ["message", "email", "expiresInSeconds"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "description": "Seconds until the verification code expires (600 = 10 minutes)"
+          }
+        }
+      },
+      "VerifyCodeInput": {
+        "type": "object",
+        "required": ["email", "code"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "The email address used in request-code"
+          },
+          "code": {
+            "type": "string",
+            "description": "The verification code from the email (format: XXXX-XXXX)",
+            "pattern": "^[A-Z0-9]{4}-[A-Z0-9]{4}$"
+          }
+        }
+      },
+      "VerifyCodeResponse": {
+        "type": "object",
+        "required": ["message", "apiKey", "email", "plan", "isNewUser", "warning"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "The API key. Format: sl_live_ + 32 hex chars. Shown only once."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "plan": {
+            "type": "string",
+            "enum": ["free", "hobby"],
+            "description": "The user's current plan"
+          },
+          "isNewUser": {
+            "type": "boolean",
+            "description": "True if a new account was created"
+          },
+          "warning": {
+            "type": "string",
+            "description": "Reminder to save the API key"
+          }
+        }
+      },
+      "FileInput": {
+        "type": "object",
+        "required": ["path", "size", "contentType"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative file path. No leading slash, no '..' traversal, max 500 chars.",
+            "maxLength": 500,
+            "example": "index.html"
+          },
+          "size": {
+            "type": "integer",
+            "description": "File size in bytes. Must be positive.",
+            "minimum": 1,
+            "example": 1024
+          },
+          "contentType": {
+            "type": "string",
+            "description": "MIME type of the file",
+            "example": "text/html"
+          },
+          "hash": {
+            "type": "string",
+            "description": "SHA-256 hex hash (64 lowercase hex chars). Enables dedup on updates — files with matching hashes are skipped.",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "ViewerInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Page title shown in the browser tab and OG tags"
+          },
+          "description": {
+            "type": "string",
+            "description": "Page description for OG tags"
+          },
+          "ogImagePath": {
+            "type": "string",
+            "description": "Path to the OG image file (must be included in the files array)"
+          }
+        }
+      },
+      "PublishInput": {
+        "type": "object",
+        "required": ["files"],
+        "properties": {
+          "files": {
+            "type": "array",
+            "description": "File manifest. Max 1000 files per site.",
+            "maxItems": 1000,
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/FileInput"
+            }
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/ViewerInput"
+          }
+        }
+      },
+      "UploadInstruction": {
+        "type": "object",
+        "required": ["path", "method", "url", "headers"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The file path this upload corresponds to"
+          },
+          "method": {
+            "type": "string",
+            "enum": ["PUT"],
+            "description": "HTTP method to use for the upload"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL to PUT the file content to"
+          },
+          "headers": {
+            "type": "object",
+            "description": "Headers to include with the upload request",
+            "properties": {
+              "Content-Type": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "SkippedFile": {
+        "type": "object",
+        "required": ["path", "reason"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The file path that was skipped"
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["hash_match"],
+            "description": "Why the file was skipped"
+          }
+        }
+      },
+      "UploadBlock": {
+        "type": "object",
+        "required": ["versionId", "uploads", "skipped", "finalizeUrl", "expiresInSeconds"],
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "description": "ULID version identifier. Pass this to the finalize endpoint."
+          },
+          "uploads": {
+            "type": "array",
+            "description": "Files that need to be uploaded by the client",
+            "items": {
+              "$ref": "#/components/schemas/UploadInstruction"
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "description": "Files that were skipped because their hash matched a previous version",
+            "items": {
+              "$ref": "#/components/schemas/SkippedFile"
+            }
+          },
+          "finalizeUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL to POST to after all uploads are complete"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "description": "Seconds until the upload URLs expire (3600 = 1 hour)"
+          }
+        }
+      },
+      "CreateSiteResponse": {
+        "type": "object",
+        "required": ["slug", "siteUrl", "upload"],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "The unique site slug"
+          },
+          "siteUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The live URL where the site will be accessible"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/UploadBlock"
+          },
+          "claimToken": {
+            "type": "string",
+            "description": "Token to claim an anonymous site later. Only returned for anonymous publishes. Shown only once."
+          },
+          "claimUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to claim the anonymous site via browser. Only returned for anonymous publishes."
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the anonymous site expires (24 hours). Only returned for anonymous publishes."
+          },
+          "anonymous": {
+            "type": "boolean",
+            "description": "True if the site was published without authentication"
+          },
+          "warning": {
+            "type": "string",
+            "description": "Reminder to save the claim token. Only returned for anonymous publishes."
+          }
+        }
+      },
+      "UpdateSiteResponse": {
+        "type": "object",
+        "required": ["slug", "siteUrl", "upload"],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "siteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/UploadBlock"
+          }
+        }
+      },
+      "FinalizeInput": {
+        "type": "object",
+        "required": ["versionId"],
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "description": "The version ID returned from the create or update response at .upload.versionId"
+          }
+        }
+      },
+      "FinalizeResponse": {
+        "type": "object",
+        "required": ["slug", "siteUrl", "versionId", "status"],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "siteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "versionId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active"]
+          }
+        }
+      },
+      "SiteSummary": {
+        "type": "object",
+        "required": ["slug", "siteUrl", "status", "fileCount", "totalSize", "createdAt", "updatedAt"],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "siteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "active"]
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "fileCount": {
+            "type": "integer"
+          },
+          "totalSize": {
+            "type": "integer",
+            "description": "Total size of all files in bytes"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ListSitesResponse": {
+        "type": "object",
+        "required": ["sites", "total"],
+        "properties": {
+          "sites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteSummary"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "FileDetail": {
+        "type": "object",
+        "required": ["path", "size", "contentType"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "GetSiteResponse": {
+        "type": "object",
+        "required": ["slug", "siteUrl", "status", "hasPassword", "createdAt", "updatedAt", "files"],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "siteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "active"]
+          },
+          "versionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "ogImagePath": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasPassword": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileDetail"
+            }
+          }
+        }
+      },
+      "DeleteSiteResponse": {
+        "type": "object",
+        "required": ["slug", "deleted"],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "DuplicateSiteResponse": {
+        "type": "object",
+        "required": ["slug", "siteUrl", "versionId", "copiedFrom", "status"],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "The new site's slug"
+          },
+          "siteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "versionId": {
+            "type": "string"
+          },
+          "copiedFrom": {
+            "type": "string",
+            "description": "The original site's slug"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active"]
+          }
+        }
+      },
+      "PatchMetadataInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "Page title. Set to null to clear."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Page description. Set to null to clear."
+          },
+          "ogImagePath": {
+            "type": "string",
+            "nullable": true,
+            "description": "Path to OG image file. Set to null to clear."
+          },
+          "password": {
+            "type": "string",
+            "nullable": true,
+            "description": "Password to protect the site. Set to null to remove password protection. Hashed server-side."
+          },
+          "ttlSeconds": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Time-to-live in seconds. Sets an expiration on the site. Set to null to remove expiration."
+          }
+        },
+        "minProperties": 1
+      },
+      "PatchMetadataResponse": {
+        "type": "object",
+        "required": ["slug", "updated"],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "ClaimInput": {
+        "type": "object",
+        "required": ["claimToken"],
+        "properties": {
+          "claimToken": {
+            "type": "string",
+            "description": "The claim token returned when the anonymous site was created"
+          }
+        }
+      },
+      "ClaimResponse": {
+        "type": "object",
+        "required": ["slug", "siteUrl", "owner", "message"],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "siteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "owner": {
+            "type": "string",
+            "format": "email",
+            "description": "The email of the user who claimed the site"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DomainSummary": {
+        "type": "object",
+        "required": ["domain", "status", "sslStatus", "isApex", "createdAt"],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "active"]
+          },
+          "sslStatus": {
+            "type": "string",
+            "enum": ["pending", "active"]
+          },
+          "isApex": {
+            "type": "boolean",
+            "description": "True if this is an apex/root domain (e.g., example.com vs sub.example.com)"
+          },
+          "verificationTxtName": {
+            "type": "string",
+            "description": "The TXT record name for domain verification"
+          },
+          "verificationTxtValue": {
+            "type": "string",
+            "description": "The TXT record value for domain verification"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verifiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "ListDomainsResponse": {
+        "type": "object",
+        "required": ["domains", "total"],
+        "properties": {
+          "domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DomainSummary"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "AddDomainInput": {
+        "type": "object",
+        "required": ["domain"],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "The domain name to add (e.g., example.com or sub.example.com). Cannot be a supalink.dev subdomain.",
+            "example": "example.com"
+          }
+        }
+      },
+      "DnsRecord": {
+        "type": "object",
+        "required": ["type", "name", "value"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["CNAME", "TXT"]
+          },
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "AddDomainResponse": {
+        "type": "object",
+        "required": ["domain", "status", "dns", "message"],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending"]
+          },
+          "dns": {
+            "type": "object",
+            "required": ["instructions", "records"],
+            "properties": {
+              "instructions": {
+                "type": "string"
+              },
+              "records": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DnsRecord"
+                }
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteDomainResponse": {
+        "type": "object",
+        "required": ["domain", "deleted"],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "GetHandleResponse": {
+        "type": "object",
+        "required": ["handle", "url"],
+        "properties": {
+          "handle": {
+            "type": "string",
+            "nullable": true,
+            "description": "The user's vanity handle, or null if not set"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "The handle URL, or null if no handle is set"
+          }
+        }
+      },
+      "SetHandleInput": {
+        "type": "object",
+        "required": ["handle"],
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "The desired handle. 3-30 chars, lowercase letters/numbers/hyphens, cannot start or end with hyphen.",
+            "pattern": "^[a-z][a-z0-9-]{1,28}[a-z0-9]$",
+            "minLength": 3,
+            "maxLength": 30,
+            "example": "sid"
+          }
+        }
+      },
+      "SetHandleResponse": {
+        "type": "object",
+        "required": ["handle", "url", "message"],
+        "properties": {
+          "handle": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
