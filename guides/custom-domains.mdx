@@ -1,11 +1,11 @@
 ---
 title: Custom Domains
-description: Point your own domain to a Supalink site
+description: Point your own domain to a SimpleHost site
 ---
 
 ## Overview
 
-You can point your own domain (or subdomain) to any Supalink site. SSL certificates are provisioned automatically.
+You can point your own domain (or subdomain) to any SimpleHost site. SSL certificates are provisioned automatically.
 
 | Plan | Custom Domains |
 |------|---------------|
@@ -16,7 +16,7 @@ You can point your own domain (or subdomain) to any Supalink site. SSL certifica
 
 ### Step 1: Add the domain in your dashboard
 
-1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+1. Go to [simplehost.dev/dashboard](https://simplehost.dev/dashboard)
 2. Click the **Domains** tab
 3. Click **+ Add Domain**
 4. Enter your domain (e.g., `docs.mysite.com`)
@@ -29,13 +29,13 @@ Add these DNS records at your domain registrar or DNS provider:
 
 | Type | Name | Target |
 |------|------|--------|
-| CNAME | `docs` (or your subdomain) | `proxy.supalink.dev` |
+| CNAME | `docs` (or your subdomain) | `proxy.simplehost.dev` |
 
 #### TXT Record (verification)
 
 | Type | Name | Value |
 |------|------|-------|
-| TXT | `_supalink.docs` (or `_supalink.yoursubdomain`) | The verification code shown in the dashboard |
+| TXT | `_simplehost.docs` (or `_simplehost.yoursubdomain`) | The verification code shown in the dashboard |
 
 ### Step 3: Wait for verification
 
@@ -61,16 +61,16 @@ You can also manage custom domains through the API:
 
 ```bash
 # List your domains
-curl -X GET https://supalink.dev/api/v1/domains \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/domains \
+  -H "Authorization: Bearer sh_live_your_key_here"
 
 # Add a domain
-curl -X POST https://supalink.dev/api/v1/domains \
+curl -X POST https://simplehost.dev/api/v1/domains \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"domain": "docs.mysite.com", "siteSlug": "bright-canvas-a7k2"}'
 
 # Remove a domain
-curl -X DELETE https://supalink.dev/api/v1/domains/docs.mysite.com \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X DELETE https://simplehost.dev/api/v1/domains/docs.mysite.com \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```

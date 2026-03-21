@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install the Supalink skill for your AI coding agent
+description: Install the SimpleHost skill for your AI coding agent
 ---
 
 ## Install via npx
@@ -8,7 +8,7 @@ description: Install the Supalink skill for your AI coding agent
 The recommended way to install:
 
 ```bash
-npx skills add sk-code-01/supalink-skill --skill supalink -g
+npx skills add sk-code-01/simplehost-skill --skill simplehost -g
 ```
 
 The `-g` flag installs globally (available in all projects). Omit it for a project-local install.
@@ -20,17 +20,17 @@ If `npx skills add` doesn't work, you can install manually:
 ### Claude Code
 
 ```bash
-mkdir -p ~/.claude/skills/supalink
-curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skills/supalink/SKILL.md \
-  -o ~/.claude/skills/supalink/SKILL.md
+mkdir -p ~/.claude/skills/simplehost
+curl -fsSL https://raw.githubusercontent.com/sk-code-01/simplehost-skill/main/skills/simplehost/SKILL.md \
+  -o ~/.claude/skills/simplehost/SKILL.md
 ```
 
 ### Cursor
 
 ```bash
-mkdir -p .cursor/skills/supalink
-curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skills/supalink/SKILL.md \
-  -o .cursor/skills/supalink/SKILL.md
+mkdir -p .cursor/skills/simplehost
+curl -fsSL https://raw.githubusercontent.com/sk-code-01/simplehost-skill/main/skills/simplehost/SKILL.md \
+  -o .cursor/skills/simplehost/SKILL.md
 ```
 
 ## Verify Installation
@@ -38,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skil
 Start a new Claude Code session and type:
 
 ```
-/supalink
+/simplehost
 ```
 
 If the skill is installed, Claude will activate it and ask what you want to publish.
@@ -48,13 +48,13 @@ If the skill is installed, Claude will activate it and ask what you want to publ
 For permanent publishing, set your API key as an environment variable:
 
 ```bash
-export SUPALINK_API_KEY="sl_live_your_key_here"
+export SIMPLEHOST_API_KEY="sh_live_your_key_here"
 ```
 
 Add it to your shell profile (`~/.zshrc` or `~/.bashrc`) to persist across sessions:
 
 ```bash
-echo 'export SUPALINK_API_KEY="sl_live_your_key_here"' >> ~/.zshrc
+echo 'export SIMPLEHOST_API_KEY="sh_live_your_key_here"' >> ~/.zshrc
 ```
 
 <Tip>
@@ -73,11 +73,11 @@ The skill uses `publish.sh` which requires:
 ### Global
 
 ```bash
-npx skills remove supalink -g
+npx skills remove simplehost -g
 ```
 
 ### Manual
 
 ```bash
-rm -rf ~/.claude/skills/supalink
+rm -rf ~/.claude/skills/simplehost
 ```

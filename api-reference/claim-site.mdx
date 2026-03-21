@@ -24,7 +24,7 @@ POST /api/v1/publish/:slug/claim
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | Yes | `Bearer sl_live_...` — you must be authenticated to claim a site |
+| `Authorization` | Yes | `Bearer sh_live_...` — you must be authenticated to claim a site |
 
 ### Request Body
 
@@ -35,9 +35,9 @@ POST /api/v1/publish/:slug/claim
 ### Example
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/claim \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"claimToken": "550e8400-e29b-41d4-a716-446655440000"}'
 ```
 
@@ -46,7 +46,7 @@ curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "owner": "you@example.com",
   "message": "Site claimed successfully! It is now permanent and linked to your account."
 }

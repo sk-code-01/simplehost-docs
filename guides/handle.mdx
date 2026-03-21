@@ -1,11 +1,11 @@
 ---
 title: Handle
-description: Get a personalized subdomain for your Supalink profile
+description: Get a personalized subdomain for your SimpleHost profile
 ---
 
 ## What is a Handle?
 
-A handle gives you a personalized URL at `yourname.supalink.dev`. It's like a username for your Supalink profile.
+A handle gives you a personalized URL at `yourname.simplehost.dev`. It's like a username for your SimpleHost profile.
 
 <Note>
 Handles are available on the **Hobby plan** ($4/mo) only.
@@ -13,7 +13,7 @@ Handles are available on the **Hobby plan** ($4/mo) only.
 
 ## Setting Your Handle
 
-1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+1. Go to [simplehost.dev/dashboard](https://simplehost.dev/dashboard)
 2. Click the **Handle** tab
 3. Enter your desired handle
 4. Click **Save Changes**
@@ -27,18 +27,18 @@ Handles are available on the **Hobby plan** ($4/mo) only.
 
 ## Using Your Handle
 
-Once set, your handle URL (`yourname.supalink.dev`) is active. You can configure what it points to in the dashboard.
+Once set, your handle URL (`yourname.simplehost.dev`) is active. You can configure what it points to in the dashboard.
 
 ## Managing via API
 
 ```bash
 # Get your current handle
-curl -X GET https://supalink.dev/api/v1/handle \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/handle \
+  -H "Authorization: Bearer sh_live_your_key_here"
 
 # Set or update your handle
-curl -X PUT https://supalink.dev/api/v1/handle \
+curl -X PUT https://simplehost.dev/api/v1/handle \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"handle": "yourname"}'
 ```

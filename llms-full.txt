@@ -1,4 +1,4 @@
-# Supalink
+# SimpleHost
 
 > Instant static web hosting for developers and AI agents. Publish any file or folder and get a live URL in seconds.
 
@@ -6,13 +6,13 @@
 
 # Introduction
 
-## What is Supalink?
+## What is SimpleHost?
 
-Supalink is instant static web hosting. Publish any file or folder and get a live URL in seconds.
+SimpleHost is instant static web hosting. Publish any file or folder and get a live URL in seconds.
 
 ```bash
 ./publish.sh ./dist
-# => https://bright-canvas-a7k2.supalink.dev/
+# => https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 Every site gets a unique slug and is served from a global CDN via Cloudflare.
@@ -23,7 +23,7 @@ Every site gets a unique slug and is served from a global CDN via Cloudflare.
 - **Zero Config**: No build pipeline, no CI/CD setup, no server config. Just publish and go.
 - **Agent-Native**: Built for AI agents. Install the Claude Code skill and publish from any conversation.
 - **Hash Deduplication**: On updates, only changed files are uploaded. Unchanged files are copied server-side.
-- **Custom Domains**: Point your own domain to any Supalink site with automatic SSL.
+- **Custom Domains**: Point your own domain to any SimpleHost site with automatic SSL.
 - **Anonymous Publishing**: No account needed. Publish anonymously with a 24-hour expiry. Claim later to keep it.
 
 ## How It Works
@@ -32,7 +32,7 @@ Publishing is a 3-step process:
 
 1. **Create** — Send your file manifest to the API. You get back upload URLs for each file.
 2. **Upload** — Upload each file to its presigned URL. Files go directly to Cloudflare R2 storage.
-3. **Finalize** — Tell the API you're done. Your site goes live instantly at `slug.supalink.dev`.
+3. **Finalize** — Tell the API you're done. Your site goes live instantly at `slug.simplehost.dev`.
 
 The `publish.sh` script handles all three steps automatically.
 
@@ -53,7 +53,7 @@ You need `curl` and `jq` installed. Both come pre-installed on macOS and most Li
 ## Step 1: Get the publish script
 
 ```bash
-curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+curl -fsSL https://simplehost.dev/publish.sh -o publish.sh && chmod +x publish.sh
 ```
 
 ## Step 2: Publish a directory
@@ -62,7 +62,7 @@ curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
 ./publish.sh ./my-site
 ```
 
-That's it. You'll get a live URL like `https://bright-canvas-a7k2.supalink.dev/`.
+That's it. You'll get a live URL like `https://bright-canvas-a7k2.simplehost.dev/`.
 
 Without an API key, your site is published anonymously and expires in **24 hours**. See below to make it permanent.
 
@@ -73,7 +73,7 @@ Without an API key, your site is published anonymously and expires in **24 hours
 1. **Request a verification code**
 
 ```bash
-curl -s -X POST https://supalink.dev/api/auth/agent/request-code \
+curl -s -X POST https://simplehost.dev/api/auth/agent/request-code \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com"}'
 ```
@@ -83,7 +83,7 @@ curl -s -X POST https://supalink.dev/api/auth/agent/request-code \
 3. **Verify and get your API key**
 
 ```bash
-curl -s -X POST https://supalink.dev/api/auth/agent/verify-code \
+curl -s -X POST https://simplehost.dev/api/auth/agent/verify-code \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com", "code": "ABCD-1234"}'
 ```
@@ -93,7 +93,7 @@ The response includes your API key. **Save it immediately** — it is shown only
 ### Publish with your API key
 
 ```bash
-export SUPALINK_API_KEY="sl_live_your_key_here"
+export SIMPLEHOST_API_KEY="sh_live_your_key_here"
 ./publish.sh ./my-site
 ```
 
@@ -122,7 +122,7 @@ Only changed files are uploaded (hash deduplication). Unchanged files are copied
 
 ## Architecture
 
-Supalink runs entirely on Cloudflare's edge infrastructure:
+SimpleHost runs entirely on Cloudflare's edge infrastructure:
 
 - **Cloudflare Workers** — Handles all API requests and site serving
 - **Cloudflare R2** — Object storage for published files (S3-compatible, zero egress fees)
@@ -164,7 +164,7 @@ The old version (if updating) is marked as `superseded`. The new version becomes
 
 ## Site Serving
 
-When someone visits `slug.supalink.dev`:
+When someone visits `slug.simplehost.dev`:
 
 1. The Worker extracts the subdomain (`slug`)
 2. Looks up the site in D1 to find the active version
@@ -210,7 +210,7 @@ Anonymous sites receive a `claimToken` in the response. You can claim the site l
 ## Base URL
 
 ```
-https://supalink.dev
+https://simplehost.dev
 ```
 
 All API endpoints are prefixed with `/api/v1/` or `/api/auth/`.
@@ -220,10 +220,10 @@ All API endpoints are prefixed with `/api/v1/` or `/api/auth/`.
 Authenticated endpoints require a Bearer token in the `Authorization` header:
 
 ```
-Authorization: Bearer sl_live_your_api_key_here
+Authorization: Bearer sh_live_your_api_key_here
 ```
 
-API keys have the format `sl_live_` followed by 32 hex characters. See [Authentication](/api-reference/authentication) for how to get one.
+API keys have the format `sh_live_` followed by 32 hex characters. See [Authentication](/api-reference/authentication) for how to get one.
 
 Some endpoints work without authentication (anonymous publishing), but with limitations.
 
@@ -296,12 +296,12 @@ See [Rate Limits](/api-reference/rate-limits) for limits per plan.
 
 ## How Authentication Works
 
-Supalink uses **email-based authentication**. There are no passwords — you verify your email with a one-time code and receive an API key.
+SimpleHost uses **email-based authentication**. There are no passwords — you verify your email with a one-time code and receive an API key.
 
 The API key is used for all authenticated requests via the `Authorization` header:
 
 ```
-Authorization: Bearer sl_live_your_api_key_here
+Authorization: Bearer sh_live_your_api_key_here
 ```
 
 ## Request a Verification Code
@@ -313,7 +313,7 @@ Send a verification code to an email address.
 - `email` (string, required): The email address to send the code to.
 
 ```bash
-curl -X POST https://supalink.dev/api/auth/agent/request-code \
+curl -X POST https://simplehost.dev/api/auth/agent/request-code \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com"}'
 ```
@@ -340,7 +340,7 @@ Exchange the verification code for an API key.
 - `code` (string, required): The verification code from your email (format: `XXXX-XXXX`).
 
 ```bash
-curl -X POST https://supalink.dev/api/auth/agent/verify-code \
+curl -X POST https://simplehost.dev/api/auth/agent/verify-code \
   -H "Content-Type: application/json" \
   -d '{"email": "you@example.com", "code": "ABCD-1234"}'
 ```
@@ -352,7 +352,7 @@ Existing User (200):
 ```json
 {
   "message": "Verified! Here is your API key.",
-  "apiKey": "sl_live_1981ecdf8dbb8c20c7da2b068ccbc12a",
+  "apiKey": "sh_live_1981ecdf8dbb8c20c7da2b068ccbc12a",
   "email": "you@example.com",
   "plan": "free",
   "isNewUser": false,
@@ -365,7 +365,7 @@ New User (201):
 ```json
 {
   "message": "Verified! Here is your API key.",
-  "apiKey": "sl_live_a4f2e8c9b1d3f6e7a0c5d2b4e8f1a3c6",
+  "apiKey": "sh_live_a4f2e8c9b1d3f6e7a0c5d2b4e8f1a3c6",
   "email": "you@example.com",
   "plan": "free",
   "isNewUser": true,
@@ -380,14 +380,14 @@ The API key is displayed **only once**. Save it immediately. If you lose it, you
 Set it as an environment variable:
 
 ```bash
-export SUPALINK_API_KEY="sl_live_your_key_here"
+export SIMPLEHOST_API_KEY="sh_live_your_key_here"
 ```
 
 Or pass it directly in requests:
 
 ```bash
-curl -X GET https://supalink.dev/api/v1/publishes \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/publishes \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ## API Key Format
@@ -395,10 +395,10 @@ curl -X GET https://supalink.dev/api/v1/publishes \
 API keys follow this pattern:
 
 ```
-sl_live_ + 32 lowercase hex characters
+sh_live_ + 32 lowercase hex characters
 ```
 
-Example: `sl_live_1981ecdf8dbb8c20c7da2b068ccbc12a`
+Example: `sh_live_1981ecdf8dbb8c20c7da2b068ccbc12a`
 
 ---
 
@@ -417,7 +417,7 @@ POST /api/v1/publish
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | No | `Bearer sl_live_...` — omit for anonymous publishing |
+| `Authorization` | No | `Bearer sh_live_...` — omit for anonymous publishing |
 
 ### Request Body
 
@@ -437,9 +437,9 @@ POST /api/v1/publish
 ### Example Request
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish \
+curl -X POST https://simplehost.dev/api/v1/publish \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{
     "files": [
       {
@@ -463,14 +463,14 @@ curl -X POST https://supalink.dev/api/v1/publish \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "upload": {
     "versionId": "01jm4abc123def456",
     "uploads": [
       {
         "path": "index.html",
         "method": "PUT",
-        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=...&ct=text%2Fhtml&exp=...",
+        "url": "https://simplehost.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=...&ct=text%2Fhtml&exp=...",
         "headers": {
           "Content-Type": "text/html"
         }
@@ -478,14 +478,14 @@ curl -X POST https://supalink.dev/api/v1/publish \
       {
         "path": "style.css",
         "method": "PUT",
-        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Fstyle.css?token=...&ct=text%2Fcss&exp=...",
+        "url": "https://simplehost.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Fstyle.css?token=...&ct=text%2Fcss&exp=...",
         "headers": {
           "Content-Type": "text/css"
         }
       }
     ],
     "skipped": [],
-    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+    "finalizeUrl": "https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/finalize",
     "expiresInSeconds": 3600
   }
 }
@@ -498,9 +498,9 @@ When no `Authorization` header is provided, the response includes additional fie
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "claimToken": "550e8400-e29b-41d4-a716-446655440000",
-  "claimUrl": "https://supalink.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
+  "claimUrl": "https://simplehost.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
   "expiresAt": "2026-03-21T20:00:00.000Z",
   "anonymous": true,
   "warning": "IMPORTANT: Save the claimToken and claimUrl. Returned only once.",
@@ -546,7 +546,7 @@ The raw file bytes. Do **not** wrap in JSON — send the file content directly.
 
 ```bash
 # Using the URL from the create response
-curl -X PUT "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=abc123&ct=text%2Fhtml&exp=1711050000000" \
+curl -X PUT "https://simplehost.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=abc123&ct=text%2Fhtml&exp=1711050000000" \
   -H "Content-Type: text/html" \
   --data-binary "@./dist/index.html"
 ```
@@ -602,9 +602,9 @@ POST /api/v1/publish/:slug/finalize
 ### Example
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize \
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/finalize \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"versionId": "01jm4abc123def456"}'
 ```
 
@@ -613,7 +613,7 @@ curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "versionId": "01jm4abc123def456",
   "status": "active"
 }
@@ -653,7 +653,7 @@ PUT /api/v1/publish/:slug
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Request Body
 
@@ -664,9 +664,9 @@ Same as Create a Site. The `files` array contains the complete file manifest for
 ### Example
 
 ```bash
-curl -X PUT https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
+curl -X PUT https://simplehost.dev/api/v1/publish/bright-canvas-a7k2 \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{
     "files": [
       {
@@ -690,14 +690,14 @@ curl -X PUT https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "upload": {
     "versionId": "01jm4new789ghi012",
     "uploads": [
       {
         "path": "index.html",
         "method": "PUT",
-        "url": "https://supalink.dev/api/v1/_upload/...",
+        "url": "https://simplehost.dev/api/v1/_upload/...",
         "headers": { "Content-Type": "text/html" }
       }
     ],
@@ -707,7 +707,7 @@ curl -X PUT https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
         "reason": "hash_match"
       }
     ],
-    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+    "finalizeUrl": "https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/finalize",
     "expiresInSeconds": 3600
   }
 }
@@ -740,13 +740,13 @@ GET /api/v1/publishes
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Example
 
 ```bash
-curl -X GET https://supalink.dev/api/v1/publishes \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/publishes \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ### Response (200)
@@ -756,7 +756,7 @@ curl -X GET https://supalink.dev/api/v1/publishes \
   "sites": [
     {
       "slug": "bright-canvas-a7k2",
-      "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+      "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
       "status": "active",
       "title": "My Project",
       "fileCount": 5,
@@ -767,7 +767,7 @@ curl -X GET https://supalink.dev/api/v1/publishes \
     },
     {
       "slug": "deep-dock-h336",
-      "siteUrl": "https://deep-dock-h336.supalink.dev/",
+      "siteUrl": "https://deep-dock-h336.simplehost.dev/",
       "status": "pending",
       "title": null,
       "fileCount": 0,
@@ -815,13 +815,13 @@ GET /api/v1/publish/:slug
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Example
 
 ```bash
-curl -X GET https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/publish/bright-canvas-a7k2 \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ### Response (200)
@@ -829,7 +829,7 @@ curl -X GET https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "status": "active",
   "versionId": "01jm4abc123def456",
   "title": "My Project",
@@ -883,13 +883,13 @@ DELETE /api/v1/publish/:slug
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Example
 
 ```bash
-curl -X DELETE https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X DELETE https://simplehost.dev/api/v1/publish/bright-canvas-a7k2 \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ### Response (200)
@@ -930,13 +930,13 @@ POST /api/v1/publish/:slug/duplicate
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Example
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/duplicate \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/duplicate \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ### Response (201)
@@ -944,7 +944,7 @@ curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/duplicate \
 ```json
 {
   "slug": "cool-river-x9f3",
-  "siteUrl": "https://cool-river-x9f3.supalink.dev/",
+  "siteUrl": "https://cool-river-x9f3.simplehost.dev/",
   "versionId": "01jm4xyz789ghi012",
   "copiedFrom": "bright-canvas-a7k2",
   "status": "active"
@@ -981,7 +981,7 @@ PATCH /api/v1/publish/:slug/metadata
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Request Body
 
@@ -996,9 +996,9 @@ All fields are optional. Only include the fields you want to change. Set a field
 ### Example
 
 ```bash
-curl -X PATCH https://supalink.dev/api/v1/publish/bright-canvas-a7k2/metadata \
+curl -X PATCH https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/metadata \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{
     "title": "My Project",
     "description": "A cool project",
@@ -1038,7 +1038,7 @@ POST /api/v1/publish/:slug/claim
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | Yes | `Bearer sl_live_...` — you must be authenticated to claim a site |
+| `Authorization` | Yes | `Bearer sh_live_...` — you must be authenticated to claim a site |
 
 ### Request Body
 
@@ -1047,9 +1047,9 @@ POST /api/v1/publish/:slug/claim
 ### Example
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/claim \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"claimToken": "550e8400-e29b-41d4-a716-446655440000"}'
 ```
 
@@ -1058,7 +1058,7 @@ curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "owner": "you@example.com",
   "message": "Site claimed successfully! It is now permanent and linked to your account."
 }
@@ -1123,7 +1123,7 @@ All API errors return JSON with a consistent structure:
 }
 ```
 
-**Fix:** Check that your API key starts with `sl_live_` and is complete (no truncation).
+**Fix:** Check that your API key starts with `sh_live_` and is complete (no truncation).
 
 ### Rate Limited
 
@@ -1222,7 +1222,7 @@ If you're hitting rate limits on the Free plan, consider upgrading to Hobby ($4/
 ## Download
 
 ```bash
-curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+curl -fsSL https://simplehost.dev/publish.sh -o publish.sh && chmod +x publish.sh
 ```
 
 ## Requirements
@@ -1248,14 +1248,14 @@ curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
 ### With authentication (permanent sites)
 
 ```bash
-export SUPALINK_API_KEY="sl_live_your_key_here"
+export SIMPLEHOST_API_KEY="sh_live_your_key_here"
 ./publish.sh ./dist
 ```
 
 ### Custom API base URL
 
 ```bash
-export SUPALINK_BASE="https://supalink.dev"
+export SIMPLEHOST_BASE="https://simplehost.dev"
 ./publish.sh ./dist
 ```
 
@@ -1281,7 +1281,7 @@ Uploading 12 file(s)...
 Finalizing...
 
 Published!
-   URL:  https://bright-canvas-a7k2.supalink.dev/
+   URL:  https://bright-canvas-a7k2.simplehost.dev/
    Slug: bright-canvas-a7k2
 ```
 
@@ -1304,11 +1304,11 @@ You can use the script in any CI/CD pipeline:
 
 ```yaml
 # GitHub Actions example
-- name: Publish to Supalink
+- name: Publish to SimpleHost
   env:
-    SUPALINK_API_KEY: ${{ secrets.SUPALINK_API_KEY }}
+    SIMPLEHOST_API_KEY: ${{ secrets.SIMPLEHOST_API_KEY }}
   run: |
-    curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+    curl -fsSL https://simplehost.dev/publish.sh -o publish.sh && chmod +x publish.sh
     ./publish.sh ./dist
 ```
 
@@ -1318,7 +1318,7 @@ You can use the script in any CI/CD pipeline:
 
 ## Overview
 
-You can point your own domain (or subdomain) to any Supalink site. SSL certificates are provisioned automatically.
+You can point your own domain (or subdomain) to any SimpleHost site. SSL certificates are provisioned automatically.
 
 | Plan | Custom Domains |
 |------|---------------|
@@ -1329,7 +1329,7 @@ You can point your own domain (or subdomain) to any Supalink site. SSL certifica
 
 ### Step 1: Add the domain in your dashboard
 
-1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+1. Go to [simplehost.dev/dashboard](https://simplehost.dev/dashboard)
 2. Click the **Domains** tab
 3. Click **+ Add Domain**
 4. Enter your domain (e.g., `docs.mysite.com`)
@@ -1342,13 +1342,13 @@ Add these DNS records at your domain registrar or DNS provider:
 
 | Type | Name | Target |
 |------|------|--------|
-| CNAME | `docs` (or your subdomain) | `proxy.supalink.dev` |
+| CNAME | `docs` (or your subdomain) | `proxy.simplehost.dev` |
 
 #### TXT Record (verification)
 
 | Type | Name | Value |
 |------|------|-------|
-| TXT | `_supalink.docs` (or `_supalink.yoursubdomain`) | The verification code shown in the dashboard |
+| TXT | `_simplehost.docs` (or `_simplehost.yoursubdomain`) | The verification code shown in the dashboard |
 
 ### Step 3: Wait for verification
 
@@ -1374,18 +1374,18 @@ You can also manage custom domains through the API:
 
 ```bash
 # List your domains
-curl -X GET https://supalink.dev/api/v1/domains \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/domains \
+  -H "Authorization: Bearer sh_live_your_key_here"
 
 # Add a domain
-curl -X POST https://supalink.dev/api/v1/domains \
+curl -X POST https://simplehost.dev/api/v1/domains \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"domain": "docs.mysite.com", "siteSlug": "bright-canvas-a7k2"}'
 
 # Remove a domain
-curl -X DELETE https://supalink.dev/api/v1/domains/docs.mysite.com \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X DELETE https://simplehost.dev/api/v1/domains/docs.mysite.com \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ---
@@ -1394,13 +1394,13 @@ curl -X DELETE https://supalink.dev/api/v1/domains/docs.mysite.com \
 
 ## What is a Handle?
 
-A handle gives you a personalized URL at `yourname.supalink.dev`. It's like a username for your Supalink profile.
+A handle gives you a personalized URL at `yourname.simplehost.dev`. It's like a username for your SimpleHost profile.
 
 Handles are available on the **Hobby plan** ($4/mo) only.
 
 ## Setting Your Handle
 
-1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+1. Go to [simplehost.dev/dashboard](https://simplehost.dev/dashboard)
 2. Click the **Handle** tab
 3. Enter your desired handle
 4. Click **Save Changes**
@@ -1414,19 +1414,19 @@ Handles are available on the **Hobby plan** ($4/mo) only.
 
 ## Using Your Handle
 
-Once set, your handle URL (`yourname.supalink.dev`) is active. You can configure what it points to in the dashboard.
+Once set, your handle URL (`yourname.simplehost.dev`) is active. You can configure what it points to in the dashboard.
 
 ## Managing via API
 
 ```bash
 # Get your current handle
-curl -X GET https://supalink.dev/api/v1/handle \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/handle \
+  -H "Authorization: Bearer sh_live_your_key_here"
 
 # Set or update your handle
-curl -X PUT https://supalink.dev/api/v1/handle \
+curl -X PUT https://simplehost.dev/api/v1/handle \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"handle": "yourname"}'
 ```
 
@@ -1436,9 +1436,9 @@ curl -X PUT https://supalink.dev/api/v1/handle \
 
 ## How It Works
 
-You can publish to Supalink without an API key. Anonymous sites:
+You can publish to SimpleHost without an API key. Anonymous sites:
 
-- Are live immediately at `slug.supalink.dev`
+- Are live immediately at `slug.simplehost.dev`
 - **Expire in 24 hours** automatically
 - Come with a **claim token** to make them permanent later
 - Are rate limited to **5 requests per hour** per IP
@@ -1447,7 +1447,7 @@ You can publish to Supalink without an API key. Anonymous sites:
 
 ### With the script
 
-Just don't set `SUPALINK_API_KEY`:
+Just don't set `SIMPLEHOST_API_KEY`:
 
 ```bash
 ./publish.sh ./my-site
@@ -1458,7 +1458,7 @@ Just don't set `SUPALINK_API_KEY`:
 Omit the `Authorization` header:
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish \
+curl -X POST https://simplehost.dev/api/v1/publish \
   -H "Content-Type: application/json" \
   -d '{
     "files": [
@@ -1474,9 +1474,9 @@ The response includes extra fields for anonymous publishes:
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "claimToken": "550e8400-e29b-41d4-a716-446655440000",
-  "claimUrl": "https://supalink.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
+  "claimUrl": "https://simplehost.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
   "expiresAt": "2026-03-21T20:00:00.000Z",
   "anonymous": true,
   "warning": "IMPORTANT: Save the claimToken and claimUrl. Returned only once.",
@@ -1491,9 +1491,9 @@ The response includes extra fields for anonymous publishes:
 To make an anonymous site permanent, claim it with your API key and the claim token:
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/claim \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"claimToken": "550e8400-e29b-41d4-a716-446655440000"}'
 ```
 
@@ -1507,7 +1507,7 @@ After claiming:
 - **Quick demos** — Share a prototype without signing up
 - **CI previews** — Generate deploy previews in PRs
 - **One-off sharing** — Share a file for a day, it cleans up automatically
-- **Try before committing** — Test Supalink before creating an account
+- **Try before committing** — Test SimpleHost before creating an account
 
 ---
 
@@ -1515,7 +1515,7 @@ After claiming:
 
 ## How It Works
 
-When you update an existing site, Supalink compares SHA-256 hashes of each file against the previous version. Files that haven't changed are copied server-side — no re-upload needed.
+When you update an existing site, SimpleHost compares SHA-256 hashes of each file against the previous version. Files that haven't changed are copied server-side — no re-upload needed.
 
 This makes updates fast, even for large sites with hundreds of files.
 
@@ -1607,7 +1607,7 @@ If you omit the `hash` field, every file is treated as new and must be uploaded.
 
 ## Plans
 
-Supalink offers two plans:
+SimpleHost offers two plans:
 
 **Free** — $0/month — Perfect for getting started.
 - 500 sites
@@ -1654,7 +1654,7 @@ Publishing without an API key has tighter limits:
 
 You can upgrade to Hobby from your dashboard:
 
-1. Go to [supalink.dev/dashboard](https://supalink.dev/dashboard)
+1. Go to [simplehost.dev/dashboard](https://simplehost.dev/dashboard)
 2. Click the **Plan** tab
 3. Click **Upgrade to Hobby**
 4. Complete payment via LemonSqueezy
@@ -1674,16 +1674,16 @@ All limits are enforced per-account, not per-site.
 
 # Agent Skill Overview
 
-## What is the Supalink Skill?
+## What is the SimpleHost Skill?
 
-The Supalink skill lets AI coding agents (like Claude Code) publish files and folders to live URLs automatically. Once installed, just say "publish this" and the agent handles everything.
+The SimpleHost skill lets AI coding agents (like Claude Code) publish files and folders to live URLs automatically. Once installed, just say "publish this" and the agent handles everything.
 
 ## How It Works
 
 1. **Agent detects intent** — You say "publish this", "deploy my site", "give me a URL", or similar
-2. **Skill activates** — The agent loads the Supalink skill instructions
+2. **Skill activates** — The agent loads the SimpleHost skill instructions
 3. **Files are published** — The agent runs `publish.sh` to scan, upload, and finalize
-4. **URL returned** — You get a live URL at `slug.supalink.dev`
+4. **URL returned** — You get a live URL at `slug.simplehost.dev`
 
 ## Supported Agents
 
@@ -1704,7 +1704,7 @@ The skill follows the open [Agent Skills](https://agentskills.io) standard and w
 ## Quick Install
 
 ```bash
-npx skills add sk-code-01/supalink-skill --skill supalink -g
+npx skills add sk-code-01/simplehost-skill --skill simplehost -g
 ```
 
 See [Installation](/skill/installation) for detailed setup instructions.
@@ -1718,7 +1718,7 @@ See [Installation](/skill/installation) for detailed setup instructions.
 The recommended way to install:
 
 ```bash
-npx skills add sk-code-01/supalink-skill --skill supalink -g
+npx skills add sk-code-01/simplehost-skill --skill simplehost -g
 ```
 
 The `-g` flag installs globally (available in all projects). Omit it for a project-local install.
@@ -1730,17 +1730,17 @@ If `npx skills add` doesn't work, you can install manually:
 ### Claude Code
 
 ```bash
-mkdir -p ~/.claude/skills/supalink
-curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skills/supalink/SKILL.md \
-  -o ~/.claude/skills/supalink/SKILL.md
+mkdir -p ~/.claude/skills/simplehost
+curl -fsSL https://raw.githubusercontent.com/sk-code-01/simplehost-skill/main/skills/simplehost/SKILL.md \
+  -o ~/.claude/skills/simplehost/SKILL.md
 ```
 
 ### Cursor
 
 ```bash
-mkdir -p .cursor/skills/supalink
-curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skills/supalink/SKILL.md \
-  -o .cursor/skills/supalink/SKILL.md
+mkdir -p .cursor/skills/simplehost
+curl -fsSL https://raw.githubusercontent.com/sk-code-01/simplehost-skill/main/skills/simplehost/SKILL.md \
+  -o .cursor/skills/simplehost/SKILL.md
 ```
 
 ## Verify Installation
@@ -1748,7 +1748,7 @@ curl -fsSL https://raw.githubusercontent.com/sk-code-01/supalink-skill/main/skil
 Start a new Claude Code session and type:
 
 ```
-/supalink
+/simplehost
 ```
 
 If the skill is installed, Claude will activate it and ask what you want to publish.
@@ -1758,13 +1758,13 @@ If the skill is installed, Claude will activate it and ask what you want to publ
 For permanent publishing, set your API key as an environment variable:
 
 ```bash
-export SUPALINK_API_KEY="sl_live_your_key_here"
+export SIMPLEHOST_API_KEY="sh_live_your_key_here"
 ```
 
 Add it to your shell profile (`~/.zshrc` or `~/.bashrc`) to persist across sessions:
 
 ```bash
-echo 'export SUPALINK_API_KEY="sl_live_your_key_here"' >> ~/.zshrc
+echo 'export SIMPLEHOST_API_KEY="sh_live_your_key_here"' >> ~/.zshrc
 ```
 
 Don't have an API key? The skill will guide you through the authentication flow on first use. Just say "publish this" and follow the prompts.
@@ -1781,13 +1781,13 @@ The skill uses `publish.sh` which requires:
 ### Global
 
 ```bash
-npx skills remove supalink -g
+npx skills remove simplehost -g
 ```
 
 ### Manual
 
 ```bash
-rm -rf ~/.claude/skills/supalink
+rm -rf ~/.claude/skills/simplehost
 ```
 
 ---
@@ -1811,13 +1811,13 @@ Just tell your agent what to publish. The skill triggers automatically on phrase
 You can also invoke the skill directly:
 
 ```
-/supalink ./dist
+/simplehost ./dist
 ```
 
 Or without arguments (the skill will auto-detect what to publish):
 
 ```
-/supalink
+/simplehost
 ```
 
 ## Examples
@@ -1827,12 +1827,12 @@ Or without arguments (the skill will auto-detect what to publish):
 ```
 You: "Publish my project to the web"
 
-Agent: I'll publish the ./dist directory to Supalink.
+Agent: I'll publish the ./dist directory to SimpleHost.
        Scanning files... Found 15 files
        Uploading 15 files...
        Published!
 
-       https://bright-canvas-a7k2.supalink.dev/
+       https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 ### Update an existing site
@@ -1846,7 +1846,7 @@ Agent: I'll update bright-canvas-a7k2 with the new build.
        Uploading 3 files...
        Updated!
 
-       https://bright-canvas-a7k2.supalink.dev/
+       https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 ### First-time setup
@@ -1854,7 +1854,7 @@ Agent: I'll update bright-canvas-a7k2 with the new build.
 ```
 You: "Publish this site"
 
-Agent: You need a Supalink API key for permanent publishing.
+Agent: You need a SimpleHost API key for permanent publishing.
        Would you like me to set one up? I'll need your email address.
 
 You: "yes, use me@example.com"
@@ -1866,7 +1866,7 @@ You: "ABCD-1234"
 
 Agent: Authenticated! Your API key is set.
        Now publishing...
-       https://bright-canvas-a7k2.supalink.dev/
+       https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 ## Auto-Detection
@@ -1883,7 +1883,7 @@ If none are found, the agent asks you what to publish.
 
 ## Tips
 
-Set `SUPALINK_API_KEY` in your shell profile so the skill can publish permanently without asking for authentication each time.
+Set `SIMPLEHOST_API_KEY` in your shell profile so the skill can publish permanently without asking for authentication each time.
 
 - The skill remembers the slug from the last publish in the conversation, so "update my site" works without specifying the slug again
 - You can publish single files too — the skill creates a temporary directory automatically

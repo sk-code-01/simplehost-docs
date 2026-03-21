@@ -10,7 +10,7 @@ description: Use publish.sh to publish directories from the command line
 ## Download
 
 ```bash
-curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+curl -fsSL https://simplehost.dev/publish.sh -o publish.sh && chmod +x publish.sh
 ```
 
 ## Requirements
@@ -36,14 +36,14 @@ curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
 ### With authentication (permanent sites)
 
 ```bash
-export SUPALINK_API_KEY="sl_live_your_key_here"
+export SIMPLEHOST_API_KEY="sh_live_your_key_here"
 ./publish.sh ./dist
 ```
 
 ### Custom API base URL
 
 ```bash
-export SUPALINK_BASE="https://supalink.dev"
+export SIMPLEHOST_BASE="https://simplehost.dev"
 ./publish.sh ./dist
 ```
 
@@ -79,7 +79,7 @@ export SUPALINK_BASE="https://supalink.dev"
 ✅ Finalizing...
 
 🎉 Published!
-   URL:  https://bright-canvas-a7k2.supalink.dev/
+   URL:  https://bright-canvas-a7k2.simplehost.dev/
    Slug: bright-canvas-a7k2
 ```
 
@@ -102,10 +102,10 @@ You can use the script in any CI/CD pipeline:
 
 ```yaml
 # GitHub Actions example
-- name: Publish to Supalink
+- name: Publish to SimpleHost
   env:
-    SUPALINK_API_KEY: ${{ secrets.SUPALINK_API_KEY }}
+    SIMPLEHOST_API_KEY: ${{ secrets.SIMPLEHOST_API_KEY }}
   run: |
-    curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+    curl -fsSL https://simplehost.dev/publish.sh -o publish.sh && chmod +x publish.sh
     ./publish.sh ./dist
 ```

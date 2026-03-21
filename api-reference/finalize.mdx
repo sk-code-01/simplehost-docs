@@ -33,9 +33,9 @@ POST /api/v1/publish/:slug/finalize
 ### Example
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize \
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/finalize \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"versionId": "01jm4abc123def456"}'
 ```
 
@@ -44,7 +44,7 @@ curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "versionId": "01jm4abc123def456",
   "status": "active"
 }

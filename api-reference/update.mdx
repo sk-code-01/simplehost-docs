@@ -22,7 +22,7 @@ PUT /api/v1/publish/:slug
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Request Body
 
@@ -35,9 +35,9 @@ Same as [Create a Site](/api-reference/publish). The `files` array contains the 
 ### Example
 
 ```bash
-curl -X PUT https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
+curl -X PUT https://simplehost.dev/api/v1/publish/bright-canvas-a7k2 \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{
     "files": [
       {
@@ -61,14 +61,14 @@ curl -X PUT https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "upload": {
     "versionId": "01jm4new789ghi012",
     "uploads": [
       {
         "path": "index.html",
         "method": "PUT",
-        "url": "https://supalink.dev/api/v1/_upload/...",
+        "url": "https://simplehost.dev/api/v1/_upload/...",
         "headers": { "Content-Type": "text/html" }
       }
     ],
@@ -78,7 +78,7 @@ curl -X PUT https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
         "reason": "hash_match"
       }
     ],
-    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+    "finalizeUrl": "https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/finalize",
     "expiresInSeconds": 3600
   }
 }

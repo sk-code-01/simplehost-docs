@@ -5,9 +5,9 @@ description: Publish without an account — sites expire in 24 hours
 
 ## How It Works
 
-You can publish to Supalink without an API key. Anonymous sites:
+You can publish to SimpleHost without an API key. Anonymous sites:
 
-- Are live immediately at `slug.supalink.dev`
+- Are live immediately at `slug.simplehost.dev`
 - **Expire in 24 hours** automatically
 - Come with a **claim token** to make them permanent later
 - Are rate limited to **5 requests per hour** per IP
@@ -16,7 +16,7 @@ You can publish to Supalink without an API key. Anonymous sites:
 
 ### With the script
 
-Just don't set `SUPALINK_API_KEY`:
+Just don't set `SIMPLEHOST_API_KEY`:
 
 ```bash
 ./publish.sh ./my-site
@@ -27,7 +27,7 @@ Just don't set `SUPALINK_API_KEY`:
 Omit the `Authorization` header:
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish \
+curl -X POST https://simplehost.dev/api/v1/publish \
   -H "Content-Type: application/json" \
   -d '{
     "files": [
@@ -43,9 +43,9 @@ The response includes extra fields for anonymous publishes:
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "claimToken": "550e8400-e29b-41d4-a716-446655440000",
-  "claimUrl": "https://supalink.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
+  "claimUrl": "https://simplehost.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
   "expiresAt": "2026-03-21T20:00:00.000Z",
   "anonymous": true,
   "warning": "IMPORTANT: Save the claimToken and claimUrl. Returned only once.",
@@ -62,9 +62,9 @@ The response includes extra fields for anonymous publishes:
 To make an anonymous site permanent, claim it with your API key and the claim token:
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/claim \
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/claim \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{"claimToken": "550e8400-e29b-41d4-a716-446655440000"}'
 ```
 
@@ -78,4 +78,4 @@ After claiming:
 - **Quick demos** — Share a prototype without signing up
 - **CI previews** — Generate deploy previews in PRs
 - **One-off sharing** — Share a file for a day, it cleans up automatically
-- **Try before committing** — Test Supalink before creating an account
+- **Try before committing** — Test SimpleHost before creating an account

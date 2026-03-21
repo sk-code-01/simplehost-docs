@@ -3,12 +3,12 @@ title: Introduction
 description: Instant web hosting built for AI agents
 ---
 
-# Supalink is web hosting for agents.
+# SimpleHost is web hosting for agents.
 
 Your AI agent just built something — an app, a landing page, a dashboard, a report. Now it needs a URL.
 
 ```bash
-npx skills add sk-code-01/supalink-skill -g
+npx skills add sk-code-01/simplehost-skill -g
 ```
 
 That's it. Now your agent can publish anything to the web:
@@ -17,20 +17,20 @@ That's it. Now your agent can publish anything to the web:
 You: "Publish this project"
 
 Agent: Published!
-       https://bright-canvas-a7k2.supalink.dev/
+       https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 One command to install. One sentence to publish. Every agent, every project, every time.
 
-## Why Supalink?
+## Why SimpleHost?
 
 AI agents generate code constantly — HTML pages, React apps, data visualizations, PDF reports, project demos. But getting that output to a live URL has always been the hard part. Deploy scripts, CI pipelines, hosting configs.
 
-Supalink removes all of that. Your agent says "publish this" and gets a URL back. Done.
+SimpleHost removes all of that. Your agent says "publish this" and gets a URL back. Done.
 
 <CardGroup cols={2}>
   <Card title="One command install" icon="terminal">
-    `npx skills add sk-code-01/supalink-skill -g` — works with Claude Code, Cursor, Windsurf, and any agent supporting the Agent Skills standard.
+    `npx skills add sk-code-01/simplehost-skill -g` — works with Claude Code, Cursor, Windsurf, and any agent supporting the Agent Skills standard.
   </Card>
   <Card title="Zero config" icon="wand-magic-sparkles">
     No build pipeline, no CI/CD, no server setup. The agent handles everything: scan files, upload, get URL.
@@ -45,7 +45,7 @@ Supalink removes all of that. Your agent says "publish this" and gets a URL back
 
 ## What can agents publish?
 
-Anything static. HTML, CSS, JavaScript, images, PDFs, videos, fonts, data files — any file type. Some things agents build and publish to Supalink:
+Anything static. HTML, CSS, JavaScript, images, PDFs, videos, fonts, data files — any file type. Some things agents build and publish to SimpleHost:
 
 - **Web apps** — React, Vue, Svelte, or plain HTML
 - **Landing pages** — generated from a prompt
@@ -60,11 +60,11 @@ Anything static. HTML, CSS, JavaScript, images, PDFs, videos, fonts, data files 
   <Step title="Agent scans your files">
     Finds your build output (dist/, build/, out/) or whatever directory you point it to. Computes SHA-256 hashes for each file.
   </Step>
-  <Step title="Agent uploads to Supalink">
+  <Step title="Agent uploads to SimpleHost">
     Sends the file manifest to the API, uploads each file to Cloudflare R2 storage, and finalizes the site.
   </Step>
   <Step title="You get a URL">
-    Your site is live at `slug.supalink.dev` in seconds. Share it, embed it, point a custom domain to it.
+    Your site is live at `slug.simplehost.dev` in seconds. Share it, embed it, point a custom domain to it.
   </Step>
 </Steps>
 

@@ -25,7 +25,7 @@ The raw file bytes. Do **not** wrap in JSON — send the file content directly.
 
 ```bash
 # Using the URL from the create response
-curl -X PUT "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=abc123&ct=text%2Fhtml&exp=1711050000000" \
+curl -X PUT "https://simplehost.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=abc123&ct=text%2Fhtml&exp=1711050000000" \
   -H "Content-Type: text/html" \
   --data-binary "@./dist/index.html"
 ```

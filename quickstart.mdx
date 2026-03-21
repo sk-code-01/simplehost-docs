@@ -5,12 +5,12 @@ description: Give your agent the ability to publish in under 30 seconds
 
 ## For agents (recommended)
 
-Install the Supalink skill and your agent can publish anything to the web.
+Install the SimpleHost skill and your agent can publish anything to the web.
 
 ### Step 1: Install
 
 ```bash
-npx skills add sk-code-01/supalink-skill -g
+npx skills add sk-code-01/simplehost-skill -g
 ```
 
 Works with **Claude Code**, **Cursor**, **Windsurf**, and any agent supporting the [Agent Skills](https://agentskills.io) standard.
@@ -42,7 +42,7 @@ The agent handles everything — scanning files, uploading, and returning a live
 On first publish, the agent will ask for your email to get an API key. This makes your sites **permanent**. Without it, sites expire in 24 hours.
 
 ```
-Agent: "You need a Supalink API key for permanent publishing.
+Agent: "You need a SimpleHost API key for permanent publishing.
         What's your email?"
 
 You:   "me@example.com"
@@ -52,13 +52,13 @@ Agent: "Check your email for a verification code (XXXX-XXXX)."
 You:   "ABCD-1234"
 
 Agent: "Authenticated! Now publishing...
-        https://bright-canvas-a7k2.supalink.dev/"
+        https://bright-canvas-a7k2.simplehost.dev/"
 ```
 
 Set the key in your shell profile so your agent never asks again:
 
 ```bash
-echo 'export SUPALINK_API_KEY="sl_live_your_key_here"' >> ~/.zshrc
+echo 'export SIMPLEHOST_API_KEY="sh_live_your_key_here"' >> ~/.zshrc
 ```
 
 <Tip>
@@ -74,13 +74,13 @@ If you prefer to publish directly from the command line without an agent:
 ### Get the publish script
 
 ```bash
-curl -fsSL https://supalink.dev/publish.sh -o publish.sh && chmod +x publish.sh
+curl -fsSL https://simplehost.dev/publish.sh -o publish.sh && chmod +x publish.sh
 ```
 
 ### Publish a directory
 
 ```bash
-export SUPALINK_API_KEY="sl_live_your_key_here"
+export SIMPLEHOST_API_KEY="sh_live_your_key_here"
 ./publish.sh ./dist
 ```
 
@@ -100,8 +100,8 @@ Build your own integration with the REST API. See the [API Reference](/api-refer
 
 ```bash
 # Create a site
-curl -X POST https://supalink.dev/api/v1/publish \
-  -H "Authorization: Bearer sl_live_your_key" \
+curl -X POST https://simplehost.dev/api/v1/publish \
+  -H "Authorization: Bearer sh_live_your_key" \
   -H "Content-Type: application/json" \
   -d '{"files": [{"path": "index.html", "size": 1024, "contentType": "text/html"}]}'
 
@@ -110,8 +110,8 @@ curl -X POST https://supalink.dev/api/v1/publish \
 ```
 
 Your agent can also discover the API automatically via:
-- [`/llms.txt`](https://supalink.dev/llms.txt) — AI-readable docs index
-- [`/openapi.json`](https://supalink.dev/openapi.json) — Full OpenAPI 3.1.0 spec
+- [`/llms.txt`](https://simplehost.dev/llms.txt) — AI-readable docs index
+- [`/openapi.json`](https://simplehost.dev/openapi.json) — Full OpenAPI 3.1.0 spec
 
 ---
 
@@ -119,7 +119,7 @@ Your agent can also discover the API automatically via:
 
 <CardGroup cols={2}>
   <Card title="Skill usage examples" icon="robot" href="/skill/usage">
-    See what agents can do with Supalink.
+    See what agents can do with SimpleHost.
   </Card>
   <Card title="Custom Domains" icon="globe" href="/guides/custom-domains">
     Point your own domain to any site.

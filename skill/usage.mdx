@@ -1,6 +1,6 @@
 ---
 title: Usage
-description: How to use the Supalink skill with your AI agent
+description: How to use the SimpleHost skill with your AI agent
 ---
 
 ## Natural Language
@@ -20,13 +20,13 @@ Just tell your agent what to publish. The skill triggers automatically on phrase
 You can also invoke the skill directly:
 
 ```
-/supalink ./dist
+/simplehost ./dist
 ```
 
 Or without arguments (the skill will auto-detect what to publish):
 
 ```
-/supalink
+/simplehost
 ```
 
 ## Examples
@@ -36,12 +36,12 @@ Or without arguments (the skill will auto-detect what to publish):
 ```
 You: "Publish my project to the web"
 
-Agent: I'll publish the ./dist directory to Supalink.
+Agent: I'll publish the ./dist directory to SimpleHost.
        📦 Scanning files... Found 15 files
        ⬆️  Uploading 15 files...
        ✅ Published!
 
-       🔗 https://bright-canvas-a7k2.supalink.dev/
+       🔗 https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 ### Update an existing site
@@ -55,7 +55,7 @@ Agent: I'll update bright-canvas-a7k2 with the new build.
        ⬆️  Uploading 3 files...
        ✅ Updated!
 
-       🔗 https://bright-canvas-a7k2.supalink.dev/
+       🔗 https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 ### First-time setup
@@ -63,7 +63,7 @@ Agent: I'll update bright-canvas-a7k2 with the new build.
 ```
 You: "Publish this site"
 
-Agent: You need a Supalink API key for permanent publishing.
+Agent: You need a SimpleHost API key for permanent publishing.
        Would you like me to set one up? I'll need your email address.
 
 You: "yes, use me@example.com"
@@ -75,7 +75,7 @@ You: "ABCD-1234"
 
 Agent: ✅ Authenticated! Your API key is set.
        Now publishing...
-       🔗 https://bright-canvas-a7k2.supalink.dev/
+       🔗 https://bright-canvas-a7k2.simplehost.dev/
 ```
 
 ## Auto-Detection
@@ -93,7 +93,7 @@ If none are found, the agent asks you what to publish.
 ## Tips
 
 <Tip>
-Set `SUPALINK_API_KEY` in your shell profile so the skill can publish permanently without asking for authentication each time.
+Set `SIMPLEHOST_API_KEY` in your shell profile so the skill can publish permanently without asking for authentication each time.
 </Tip>
 
 - The skill remembers the slug from the last publish in the conversation, so "update my site" works without specifying the slug again

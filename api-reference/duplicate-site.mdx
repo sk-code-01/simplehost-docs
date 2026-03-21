@@ -21,13 +21,13 @@ POST /api/v1/publish/:slug/duplicate
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Example
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/duplicate \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X POST https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/duplicate \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ### Response (201)
@@ -35,7 +35,7 @@ curl -X POST https://supalink.dev/api/v1/publish/bright-canvas-a7k2/duplicate \
 ```json
 {
   "slug": "cool-river-x9f3",
-  "siteUrl": "https://cool-river-x9f3.supalink.dev/",
+  "siteUrl": "https://cool-river-x9f3.simplehost.dev/",
   "versionId": "01jm4xyz789ghi012",
   "copiedFrom": "bright-canvas-a7k2",
   "status": "active"

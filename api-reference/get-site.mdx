@@ -21,13 +21,13 @@ GET /api/v1/publish/:slug
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Example
 
 ```bash
-curl -X GET https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/publish/bright-canvas-a7k2 \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ### Response (200)
@@ -35,7 +35,7 @@ curl -X GET https://supalink.dev/api/v1/publish/bright-canvas-a7k2 \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "status": "active",
   "versionId": "01jm4abc123def456",
   "title": "My Project",

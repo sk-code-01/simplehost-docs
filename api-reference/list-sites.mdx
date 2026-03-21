@@ -15,13 +15,13 @@ GET /api/v1/publishes
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Example
 
 ```bash
-curl -X GET https://supalink.dev/api/v1/publishes \
-  -H "Authorization: Bearer sl_live_your_key_here"
+curl -X GET https://simplehost.dev/api/v1/publishes \
+  -H "Authorization: Bearer sh_live_your_key_here"
 ```
 
 ### Response (200)
@@ -31,7 +31,7 @@ curl -X GET https://supalink.dev/api/v1/publishes \
   "sites": [
     {
       "slug": "bright-canvas-a7k2",
-      "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+      "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
       "status": "active",
       "title": "My Project",
       "fileCount": 5,
@@ -42,7 +42,7 @@ curl -X GET https://supalink.dev/api/v1/publishes \
     },
     {
       "slug": "deep-dock-h336",
-      "siteUrl": "https://deep-dock-h336.supalink.dev/",
+      "siteUrl": "https://deep-dock-h336.simplehost.dev/",
       "status": "pending",
       "title": null,
       "fileCount": 0,

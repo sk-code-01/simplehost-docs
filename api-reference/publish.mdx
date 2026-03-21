@@ -16,7 +16,7 @@ POST /api/v1/publish
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | No | `Bearer sl_live_...` — omit for anonymous publishing |
+| `Authorization` | No | `Bearer sh_live_...` — omit for anonymous publishing |
 
 ### Request Body
 
@@ -58,9 +58,9 @@ POST /api/v1/publish
 ### Example Request
 
 ```bash
-curl -X POST https://supalink.dev/api/v1/publish \
+curl -X POST https://simplehost.dev/api/v1/publish \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{
     "files": [
       {
@@ -84,14 +84,14 @@ curl -X POST https://supalink.dev/api/v1/publish \
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "upload": {
     "versionId": "01jm4abc123def456",
     "uploads": [
       {
         "path": "index.html",
         "method": "PUT",
-        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=...&ct=text%2Fhtml&exp=...",
+        "url": "https://simplehost.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Findex.html?token=...&ct=text%2Fhtml&exp=...",
         "headers": {
           "Content-Type": "text/html"
         }
@@ -99,14 +99,14 @@ curl -X POST https://supalink.dev/api/v1/publish \
       {
         "path": "style.css",
         "method": "PUT",
-        "url": "https://supalink.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Fstyle.css?token=...&ct=text%2Fcss&exp=...",
+        "url": "https://simplehost.dev/api/v1/_upload/sites%2Fbright-canvas-a7k2%2F01jm4abc123%2Fstyle.css?token=...&ct=text%2Fcss&exp=...",
         "headers": {
           "Content-Type": "text/css"
         }
       }
     ],
     "skipped": [],
-    "finalizeUrl": "https://supalink.dev/api/v1/publish/bright-canvas-a7k2/finalize",
+    "finalizeUrl": "https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/finalize",
     "expiresInSeconds": 3600
   }
 }
@@ -119,9 +119,9 @@ When no `Authorization` header is provided, the response includes additional fie
 ```json
 {
   "slug": "bright-canvas-a7k2",
-  "siteUrl": "https://bright-canvas-a7k2.supalink.dev/",
+  "siteUrl": "https://bright-canvas-a7k2.simplehost.dev/",
   "claimToken": "550e8400-e29b-41d4-a716-446655440000",
-  "claimUrl": "https://supalink.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
+  "claimUrl": "https://simplehost.dev/claim?slug=bright-canvas-a7k2&token=550e8400...",
   "expiresAt": "2026-03-21T20:00:00.000Z",
   "anonymous": true,
   "warning": "IMPORTANT: Save the claimToken and claimUrl. Returned only once.",

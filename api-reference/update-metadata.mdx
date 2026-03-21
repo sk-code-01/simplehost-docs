@@ -22,7 +22,7 @@ PATCH /api/v1/publish/:slug/metadata
 | Header | Required | Description |
 |--------|----------|-------------|
 | `Content-Type` | Yes | `application/json` |
-| `Authorization` | Yes | `Bearer sl_live_...` |
+| `Authorization` | Yes | `Bearer sh_live_...` |
 
 ### Request Body
 
@@ -51,9 +51,9 @@ All fields are optional. Only include the fields you want to change. Set a field
 ### Example
 
 ```bash
-curl -X PATCH https://supalink.dev/api/v1/publish/bright-canvas-a7k2/metadata \
+curl -X PATCH https://simplehost.dev/api/v1/publish/bright-canvas-a7k2/metadata \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sl_live_your_key_here" \
+  -H "Authorization: Bearer sh_live_your_key_here" \
   -d '{
     "title": "My Project",
     "description": "A cool project",

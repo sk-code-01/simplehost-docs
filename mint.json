@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Supalink",
+  "name": "SimpleHost",
   "logo": {
     "dark": "/images/logo-dark.svg",
     "light": "/images/logo-light.svg"
@@ -18,12 +18,12 @@
   "topbarLinks": [
     {
       "name": "Dashboard",
-      "url": "https://supalink.dev/dashboard"
+      "url": "https://simplehost.dev/dashboard"
     }
   ],
   "topbarCtaButton": {
     "name": "Install Skill",
-    "url": "https://docs.supalink.dev/quickstart"
+    "url": "https://docs.simplehost.dev/quickstart"
   },
   "tabs": [
     {
@@ -95,6 +95,6 @@
     "thumbsRating": true
   },
   "api": {
-    "baseUrl": "https://supalink.dev"
+    "baseUrl": "https://simplehost.dev"
   }
 }

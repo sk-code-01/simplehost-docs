@@ -1,41 +1,41 @@
-# Supalink
+# SimpleHost
 
 > Instant static web hosting for developers and AI agents. Publish any file or folder and get a live URL in seconds.
 
 ## Getting Started
 
-- [Introduction](https://docs.supalink.dev/introduction): What Supalink is, key features, and how publishing works
-- [Quickstart](https://docs.supalink.dev/quickstart): Publish your first site in under a minute
-- [How It Works](https://docs.supalink.dev/how-it-works): Architecture, publish flow, hash deduplication, and slugs
+- [Introduction](https://docs.simplehost.dev/introduction): What SimpleHost is, key features, and how publishing works
+- [Quickstart](https://docs.simplehost.dev/quickstart): Publish your first site in under a minute
+- [How It Works](https://docs.simplehost.dev/how-it-works): Architecture, publish flow, hash deduplication, and slugs
 
 ## API Reference
 
-- [API Overview](https://docs.supalink.dev/api-reference/overview): Base URL, authentication, response format, and endpoint index
-- [Authentication](https://docs.supalink.dev/api-reference/authentication): Email-based auth flow to get an API key
-- [Create a Site](https://docs.supalink.dev/api-reference/publish): POST /api/v1/publish — create a new site and get upload URLs
-- [Upload Files](https://docs.supalink.dev/api-reference/upload): PUT presigned URL — upload file bytes to storage
-- [Finalize](https://docs.supalink.dev/api-reference/finalize): POST /api/v1/publish/:slug/finalize — make a site live
-- [Update a Site](https://docs.supalink.dev/api-reference/update): PUT /api/v1/publish/:slug — publish a new version with hash dedup
-- [List Sites](https://docs.supalink.dev/api-reference/list-sites): GET /api/v1/publishes — list all your sites
-- [Get Site Details](https://docs.supalink.dev/api-reference/get-site): GET /api/v1/publish/:slug — full site details and file list
-- [Delete a Site](https://docs.supalink.dev/api-reference/delete-site): DELETE /api/v1/publish/:slug — permanently delete a site
-- [Duplicate a Site](https://docs.supalink.dev/api-reference/duplicate-site): POST /api/v1/publish/:slug/duplicate — copy a site to a new slug
-- [Update Metadata](https://docs.supalink.dev/api-reference/update-metadata): PATCH /api/v1/publish/:slug/metadata — update title, description, password, TTL
-- [Claim a Site](https://docs.supalink.dev/api-reference/claim-site): POST /api/v1/publish/:slug/claim — transfer anonymous site to your account
-- [Errors](https://docs.supalink.dev/api-reference/errors): Error codes and response format
-- [Rate Limits](https://docs.supalink.dev/api-reference/rate-limits): API rate limits per plan
+- [API Overview](https://docs.simplehost.dev/api-reference/overview): Base URL, authentication, response format, and endpoint index
+- [Authentication](https://docs.simplehost.dev/api-reference/authentication): Email-based auth flow to get an API key
+- [Create a Site](https://docs.simplehost.dev/api-reference/publish): POST /api/v1/publish — create a new site and get upload URLs
+- [Upload Files](https://docs.simplehost.dev/api-reference/upload): PUT presigned URL — upload file bytes to storage
+- [Finalize](https://docs.simplehost.dev/api-reference/finalize): POST /api/v1/publish/:slug/finalize — make a site live
+- [Update a Site](https://docs.simplehost.dev/api-reference/update): PUT /api/v1/publish/:slug — publish a new version with hash dedup
+- [List Sites](https://docs.simplehost.dev/api-reference/list-sites): GET /api/v1/publishes — list all your sites
+- [Get Site Details](https://docs.simplehost.dev/api-reference/get-site): GET /api/v1/publish/:slug — full site details and file list
+- [Delete a Site](https://docs.simplehost.dev/api-reference/delete-site): DELETE /api/v1/publish/:slug — permanently delete a site
+- [Duplicate a Site](https://docs.simplehost.dev/api-reference/duplicate-site): POST /api/v1/publish/:slug/duplicate — copy a site to a new slug
+- [Update Metadata](https://docs.simplehost.dev/api-reference/update-metadata): PATCH /api/v1/publish/:slug/metadata — update title, description, password, TTL
+- [Claim a Site](https://docs.simplehost.dev/api-reference/claim-site): POST /api/v1/publish/:slug/claim — transfer anonymous site to your account
+- [Errors](https://docs.simplehost.dev/api-reference/errors): Error codes and response format
+- [Rate Limits](https://docs.simplehost.dev/api-reference/rate-limits): API rate limits per plan
 
 ## Guides
 
-- [Publish with Script](https://docs.supalink.dev/guides/publish-with-script): Use publish.sh to publish directories from the command line
-- [Custom Domains](https://docs.supalink.dev/guides/custom-domains): Point your own domain to a Supalink site with automatic SSL
-- [Handle](https://docs.supalink.dev/guides/handle): Get a personalized subdomain for your Supalink profile
-- [Anonymous Publishing](https://docs.supalink.dev/guides/anonymous-publishing): Publish without an account, sites expire in 24 hours
-- [Hash Deduplication](https://docs.supalink.dev/guides/hash-deduplication): Only upload changed files when updating a site
-- [Plans & Limits](https://docs.supalink.dev/guides/plans-and-limits): Compare Free and Hobby plans
+- [Publish with Script](https://docs.simplehost.dev/guides/publish-with-script): Use publish.sh to publish directories from the command line
+- [Custom Domains](https://docs.simplehost.dev/guides/custom-domains): Point your own domain to a SimpleHost site with automatic SSL
+- [Handle](https://docs.simplehost.dev/guides/handle): Get a personalized subdomain for your SimpleHost profile
+- [Anonymous Publishing](https://docs.simplehost.dev/guides/anonymous-publishing): Publish without an account, sites expire in 24 hours
+- [Hash Deduplication](https://docs.simplehost.dev/guides/hash-deduplication): Only upload changed files when updating a site
+- [Plans & Limits](https://docs.simplehost.dev/guides/plans-and-limits): Compare Free and Hobby plans
 
 ## Agent Skill
 
-- [Agent Skill Overview](https://docs.supalink.dev/skill/overview): Let AI agents publish to Supalink automatically
-- [Installation](https://docs.supalink.dev/skill/installation): Install the Supalink skill for your AI coding agent
-- [Usage](https://docs.supalink.dev/skill/usage): How to use the Supalink skill with your AI agent
+- [Agent Skill Overview](https://docs.simplehost.dev/skill/overview): Let AI agents publish to SimpleHost automatically
+- [Installation](https://docs.simplehost.dev/skill/installation): Install the SimpleHost skill for your AI coding agent
+- [Usage](https://docs.simplehost.dev/skill/usage): How to use the SimpleHost skill with your AI agent

@@ -1,6 +1,6 @@
 ---
 title: Why Agents?
-description: Why Supalink is built for AI agents, not humans
+description: Why SimpleHost is built for AI agents, not humans
 ---
 
 ## The problem
@@ -13,28 +13,28 @@ The agent builds it. You review it. And then you spend 20 minutes setting up hos
 
 ## The solution
 
-Supalink gives agents a single capability: publish anything to the web instantly.
+SimpleHost gives agents a single capability: publish anything to the web instantly.
 
 ```
 You: "Build me a landing page for my product"
 
 Agent: [builds the page]
-       "Done! Here's the live URL: https://cool-page-x9f3.supalink.dev/"
+       "Done! Here's the live URL: https://cool-page-x9f3.simplehost.dev/"
 ```
 
 No deploy scripts. No CI pipeline. No hosting config. The agent handles everything end-to-end.
 
-## How agents use Supalink
+## How agents use SimpleHost
 
 ### Discovery
 
-Agents find Supalink automatically through standard protocols:
+Agents find SimpleHost automatically through standard protocols:
 
 | Protocol | URL | Purpose |
 |----------|-----|---------|
-| **llms.txt** | [supalink.dev/llms.txt](https://supalink.dev/llms.txt) | AI-readable docs index |
-| **OpenAPI** | [supalink.dev/openapi.json](https://supalink.dev/openapi.json) | Machine-readable API spec |
-| **Agent Skill** | `npx skills add sk-code-01/supalink-skill -g` | One-command install |
+| **llms.txt** | [simplehost.dev/llms.txt](https://simplehost.dev/llms.txt) | AI-readable docs index |
+| **OpenAPI** | [simplehost.dev/openapi.json](https://simplehost.dev/openapi.json) | Machine-readable API spec |
+| **Agent Skill** | `npx skills add sk-code-01/simplehost-skill -g` | One-command install |
 
 ### Publishing
 
@@ -49,14 +49,14 @@ POST /finalize            → Make it live
 Or even simpler — the agent downloads `publish.sh` and runs it:
 
 ```bash
-curl -fsSL https://supalink.dev/publish.sh | bash -s ./dist
+curl -fsSL https://simplehost.dev/publish.sh | bash -s ./dist
 ```
 
 ### Updating
 
-When the agent updates a site, Supalink compares file hashes and only uploads what changed. A 500-file site where 3 files changed? Only 3 uploads. The agent handles this automatically.
+When the agent updates a site, SimpleHost compares file hashes and only uploads what changed. A 500-file site where 3 files changed? Only 3 uploads. The agent handles this automatically.
 
-## What makes Supalink agent-native
+## What makes SimpleHost agent-native
 
 | Feature | Why it matters for agents |
 |---------|--------------------------|
@@ -71,7 +71,7 @@ When the agent updates a site, Supalink compares file hashes and only uploads wh
 
 ## The agent workflow
 
-This is the typical flow when a developer uses an AI agent with Supalink:
+This is the typical flow when a developer uses an AI agent with SimpleHost:
 
 <Steps>
   <Step title="Developer gives a prompt">
@@ -81,16 +81,16 @@ This is the typical flow when a developer uses an AI agent with Supalink:
     The agent writes HTML, CSS, JS — whatever is needed. This is what agents are already great at.
   </Step>
   <Step title="Agent publishes it">
-    The agent calls Supalink's API (via the installed skill or directly). Files are uploaded, site goes live.
+    The agent calls SimpleHost's API (via the installed skill or directly). Files are uploaded, site goes live.
   </Step>
   <Step title="Developer gets a URL">
-    `https://sales-dash-k8m2.supalink.dev/` — live, shareable, ready to use. The whole thing took 2 minutes.
+    `https://sales-dash-k8m2.simplehost.dev/` — live, shareable, ready to use. The whole thing took 2 minutes.
   </Step>
 </Steps>
 
 ## Supported agents
 
-The Supalink skill follows the open [Agent Skills](https://agentskills.io) standard:
+The SimpleHost skill follows the open [Agent Skills](https://agentskills.io) standard:
 
 - **Claude Code** — Full support
 - **Cursor** — Full support
@@ -98,4 +98,4 @@ The Supalink skill follows the open [Agent Skills](https://agentskills.io) stand
 - **GitHub Copilot** — Via OpenAPI spec
 - **Custom agents** — Via REST API or OpenAPI spec
 
-Any agent that can make HTTP requests can use Supalink.
+Any agent that can make HTTP requests can use SimpleHost.
