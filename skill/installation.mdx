@@ -3,19 +3,25 @@ title: Installation
 description: Install the SimpleHost skill for your AI coding agent
 ---
 
-## Install via npx
-
-The recommended way to install:
+## Quick Install (recommended)
 
 ```bash
-npx skills add sk-code-01/simplehost-skill --skill simplehost -g
+curl -fsSL https://simplehost.dev/install.sh | bash
 ```
 
-The `-g` flag installs globally (available in all projects). Omit it for a project-local install.
+Works instantly — no npm needed. Installs for Claude Code and all supported agents.
+
+## Install via npx
+
+```bash
+npx skills add sk-code-01/simplehost-skill -g -y
+```
+
+The `-g` flag installs globally (available in all projects). The `-y` flag skips prompts.
 
 ## Manual Install
 
-If `npx skills add` doesn't work, you can install manually:
+If neither method works, you can install manually:
 
 ### Claude Code
 

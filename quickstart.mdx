@@ -10,8 +10,10 @@ Install the SimpleHost skill and your agent can publish anything to the web.
 ### Step 1: Install
 
 ```bash
-npx skills add sk-code-01/simplehost-skill -g
+curl -fsSL https://simplehost.dev/install.sh | bash
 ```
+
+Or if you prefer npx: `npx skills add sk-code-01/simplehost-skill -g -y`
 
 Works with **Claude Code**, **Cursor**, **Windsurf**, and any agent supporting the [Agent Skills](https://agentskills.io) standard.
 
@@ -37,41 +39,31 @@ Give me a live URL for this site
 
 The agent handles everything — scanning files, uploading, and returning a live URL.
 
-### Permanent vs Temporary
+Your agent publishes instantly — no questions, no setup. If you don't have an API key, it publishes as a temporary link (expires in 24 hours). After publishing, the agent will offer to make it permanent for free.
 
-Before publishing, the agent will ask you to choose:
+### Step 3: Make it permanent (optional)
 
-- **With an API key** — your site is **permanent**. It stays live until you delete it.
-- **Without an API key** — your site is **temporary**. It expires in 24 hours automatically.
-
-If you just need a quick preview link, skip authentication. If you want a site that sticks around, authenticate first.
-
-### Step 3: Authenticate (for permanent sites)
-
-On first publish, the agent will ask for your email to get an API key. This makes your sites **permanent**. Without it, sites expire in 24 hours.
+After your first publish, the agent will say:
 
 ```
-Agent: "You need a SimpleHost API key for permanent publishing.
-        What's your email?"
+Agent: "Your site is live! This link expires in 24 hours.
+        Want me to make it permanent? It's free — I just
+        need your email and it takes 30 seconds."
 
-You:   "me@example.com"
+You:   "yes, use me@example.com"
 
 Agent: "Check your email for a verification code (XXXX-XXXX)."
 
 You:   "ABCD-1234"
 
-Agent: "Authenticated! Now publishing...
+Agent: "Done! Your site is now permanent.
         https://bright-canvas-a7k2.simplehost.dev/"
 ```
 
-Set the key in your shell profile so your agent never asks again:
-
-```bash
-echo 'export SIMPLEHOST_API_KEY="sh_live_your_key_here"' >> ~/.zshrc
-```
+The agent saves your API key automatically. From now on, every publish is permanent — no setup ever again.
 
 <Tip>
-That's the entire setup. Your agent can now publish any project, any time, with just a sentence.
+That's the entire flow. Install → publish → done. Your agent handles everything.
 </Tip>
 
 ---
