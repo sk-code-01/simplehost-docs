@@ -7,6 +7,10 @@ description: Send secure browser requests through SimpleHost without exposing st
 
 The site proxy lets a published site call approved external APIs without exposing stored secrets in client-side files.
 
+<Warning>
+On the current SimpleHost deployment, browser-facing secret proxying is disabled while stricter request controls are being designed. The endpoint remains documented here for future compatibility, but production currently refuses public secret-backed proxy requests.
+</Warning>
+
 This endpoint is public because it is used by the browser, but it is tightly restricted:
 
 - only exact approved hosts are allowed
@@ -64,6 +68,8 @@ curl -s -X POST https://simplehost.dev/api/v1/proxy/bright-canvas-a7k2 \
 
 The proxy returns the upstream response status and body, subject to SimpleHost safety checks and response header filtering.
 
+When the feature is disabled on a deployment, the endpoint returns a `403 FORBIDDEN` response instead of forwarding the request.
+
 ## Rules
 
 - The destination hostname must be on the site's allowlist
@@ -73,7 +79,7 @@ The proxy returns the upstream response status and body, subject to SimpleHost s
 
 ## Intended Flow
 
-This endpoint is designed to work with the secure publish flow:
+When this feature is enabled on a deployment, the intended flow is:
 
 1. A publish is blocked because exposed secrets were detected in browser files
 2. The agent explains the issue to the user in plain language

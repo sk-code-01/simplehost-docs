@@ -95,11 +95,23 @@ Agent: I found a private key in your website files. If I publish it like this,
 
 You: "yes"
 
-Agent: Perfect. I’m securing that for you now and publishing a safe version of
-       your site. Your original files will stay untouched.
+Agent: Perfect. I’ll first check whether secure browser-side secret handling is
+       available on this SimpleHost deployment.
 
-       ✅ Published safely!
-       🔗 https://bright-canvas-a7k2.simplehost.dev/
+       If it is, I’ll secure the published version and keep your original files
+       untouched.
+```
+
+### If secure browser-side secret handling is unavailable
+
+```text
+Agent: I found a private key in your website files, and SimpleHost will not
+       publish it publicly in that form.
+
+       This deployment does not currently allow browser-facing secret proxying,
+       so I can’t safely publish this project with the secret in place.
+
+       Your original local files are still untouched.
 ```
 
 ### If the user says no
@@ -129,8 +141,8 @@ Agent: SimpleHost found something in your website files that looks like a
        private key. Because website files are public, it blocked the publish
        to keep that key from being exposed.
 
-       If you want, I can secure it for publishing without changing your
-       original local files.
+       If secure browser-side secret handling is available, I can help secure
+       the published version without changing your original local files.
 ```
 
 ## Auto-Detection
