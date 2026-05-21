@@ -9,10 +9,10 @@ All API errors return JSON with a consistent structure. Error messages are writt
 
 ```json
 {
-  "error": "You've hit the limit of 1 custom domain(s) on your current plan. Remove one or upgrade for more.",
+  "error": "Custom handles are a Hobby plan feature. Upgrade to Hobby ($5/mo) to claim yourname.simplehost.dev.",
   "code": "PLAN_LIMIT",
   "status": 403,
-  "hint": "Upgrade to Hobby ($5/mo) for 5 domains."
+  "hint": "Call POST /api/billing/checkout with your API key to get an upgrade link."
 }
 ```
 
@@ -29,8 +29,8 @@ Some publishing errors also include structured remediation details so an agent c
 | `UNAUTHORIZED` | 401 | Missing, invalid, or expired API key |
 | `NOT_FOUND` | 404 | Resource not found or not owned by the authenticated user |
 | `RATE_LIMITED` | 429 | Rate limit exceeded — check `X-RateLimit-Reset` header |
-| `FILE_TOO_LARGE` | 413 | Individual file exceeds plan limit (250 MB free, 5 GB hobby) |
-| `STORAGE_EXCEEDED` | 413 | Total storage quota exceeded (10 GB free, 100 GB hobby) |
+| `FILE_TOO_LARGE` | 413 | Individual file exceeds plan limit (200 MB free, 5 GB hobby) |
+| `STORAGE_EXCEEDED` | 413 | Total storage quota exceeded (200 MB free, 100 GB hobby) |
 | `SITE_LIMIT_EXCEEDED` | 403 | Maximum site count reached (500 for free plan) |
 | `PLAN_LIMIT` | 403 | Feature not available on current plan |
 | `SECRET_DETECTED` | 400 | Finalize found exposed private keys or secrets in files that would be publicly visible |
@@ -66,7 +66,7 @@ Some publishing errors also include structured remediation details so an agent c
 
 ```json
 {
-  "error": "Storage quota exceeded. Current usage: 9.8 GB of 10 GB.",
+  "error": "Storage quota exceeded. Current usage: 195 MB of 200 MB.",
   "code": "STORAGE_EXCEEDED",
   "status": 413
 }
