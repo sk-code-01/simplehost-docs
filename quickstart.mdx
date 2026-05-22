@@ -9,13 +9,20 @@ Install the SimpleHost skill and your agent can publish anything to the web.
 
 ### Step 1: Install or refresh
 
+The simplest, cross-agent way is the package registry:
+
 ```bash
-curl -fsSL https://simplehost.dev/install.sh | bash
+npx skills add sk-code-01/simplehost-skill
 ```
 
-If SimpleHost was already installed before, run the same command again to refresh to the latest version of the skill.
+Prefer a script? Download it first so you can read it, then run it:
 
-Or if you prefer `npx`: `npx skills add sk-code-01/simplehost-skill -g -y`
+```bash
+curl -fsSL https://simplehost.dev/install.sh -o /tmp/simplehost-install.sh
+bash /tmp/simplehost-install.sh
+```
+
+Already installed? Re-run either command any time to refresh to the latest version of the skill.
 
 Works with **Claude Code**, **Cursor**, **Windsurf**, and any agent supporting the [Agent Skills](https://agentskills.io) standard.
 
@@ -43,7 +50,7 @@ The agent handles everything — scanning files, uploading, and returning a live
 
 Your agent publishes instantly — no questions, no setup. If you don't have an API key, it publishes as a temporary link (expires in 24 hours). After publishing, the agent will offer to make it permanent for free.
 
-Newer versions of the skill also check for updates automatically, but the install command above is always the simplest way to refresh immediately.
+When a newer skill version is available, SimpleHost surfaces a one-line notice after a publish — re-run the install command above (or `npx skills update simplehost`) to refresh. It never updates anything on its own.
 
 ### Step 3: Make it permanent (optional)
 
@@ -127,7 +134,7 @@ Your agent can also discover the API automatically via:
     See what agents can do with SimpleHost.
   </Card>
   <Card title="Plans & Limits" icon="gauge" href="/guides/plans-and-limits">
-    Free tier gets you 500 sites and 10 GB.
+    Free tier gets you 500 sites and 200 MB.
   </Card>
   <Card title="How it works" icon="gears" href="/how-it-works">
     Architecture and publish flow details.

@@ -49,7 +49,8 @@ POST /finalize            → Make it live
 Or even simpler — the agent downloads `publish.sh` and runs it:
 
 ```bash
-curl -fsSL https://simplehost.dev/publish.sh | bash -s ./dist
+curl -fsSL https://simplehost.dev/publish.sh -o /tmp/simplehost-publish.sh
+bash /tmp/simplehost-publish.sh ./dist
 ```
 
 ### Updating

@@ -3,25 +3,24 @@ title: Installation
 description: Install or refresh the SimpleHost skill for your AI coding agent
 ---
 
-## Quick Install (recommended)
+## Install via npx (recommended)
 
 ```bash
-curl -fsSL https://simplehost.dev/install.sh | bash
+npx skills add sk-code-01/simplehost-skill
 ```
 
-Works instantly — no npm needed. Installs for Claude Code and all supported agents.
+Add `-g` to install globally (available in all projects). Works with Claude Code, Cursor, Windsurf, and any agent supporting the Agent Skills standard. Run the same command again any time to refresh to the latest version of the skill.
 
-If you already installed SimpleHost before, run the same command again any time to refresh to the latest version of the skill.
+## Install via script
 
-## Install via npx
+Download it first so you can inspect it, then run it:
 
 ```bash
-npx skills add sk-code-01/simplehost-skill -g -y
+curl -fsSL https://simplehost.dev/install.sh -o /tmp/simplehost-install.sh
+bash /tmp/simplehost-install.sh
 ```
 
-The `-g` flag installs globally (available in all projects). The `-y` flag skips prompts.
-
-If you already installed the skill with `npx`, running the same command again will refresh it.
+No npm needed. Re-run any time to refresh.
 
 ## Manual Install
 
@@ -56,7 +55,7 @@ Start a new Claude Code session and type:
 If the skill is installed, Claude will activate it and ask what you want to publish.
 
 <Tip>
-Newer versions of the SimpleHost skill also check `https://simplehost.dev/skill-version` and can prompt the agent to refresh when an update is available.
+When a newer version is published, the publish script surfaces a one-line "update available" notice with the command to run — it never fetches or updates anything on its own.
 </Tip>
 
 ## Set Your API Key
